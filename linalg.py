@@ -23,14 +23,20 @@ class Matrix:
     self.dim = rows, cols
 
     # Normalize matrix, fill missing entries with zeros
-    for entry in self.array:
-      if len(entry) != cols:
-        entry[:] = entry + [fillna] * (cols - len(entry))
+    for row in self.array:
+      if len(row) != cols:
+        row[:] = row + [fillna] * (cols - len(row))
 
     if rows == 0 or cols == 0:
       self.type = None
     else:
       self.type = type(self.array[0][0])
+
+    # Check if matrix is a single type
+    for row in self.array:
+      for elt in row:
+        if not isinstance(elt, self.type):
+          raise ValueError("All elements must have the same type")
 
   def __str__(self):
     return self.__repr__()
