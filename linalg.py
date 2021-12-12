@@ -1,3 +1,5 @@
+"""Implementation of efficient and inefficient linear algebra algorithms"""
+
 from __future__ import annotations
 import operator as op
 from functools import reduce
