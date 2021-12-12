@@ -1,7 +1,14 @@
 from __future__ import annotations
+from numbers import Number
 from typing import Any
 
 NUMERICAL_TYPES = {int, float, complex}
+
+def dot_product(a: list[Number], b: list[Number]) -> Number:
+  """Returns the dot product of the two vectors."""
+  if len(a) != len(b):
+    raise ValueError("Vectors must have same dimension")
+  return sum(x * y for x, y in zip(a, b))
 
 class Matrix:
   """Class to represent a matrix, supporting elementary unary and binary
@@ -126,12 +133,23 @@ class Matrix:
     return self
 
   def __mul__(self, m: Matrix) -> Matrix:
-    """Matrix multiplication."""
+    """Matrix multiplication (brute force)."""
+    if not isinstance(m, Matrix):
+      raise TypeError("Right operand must be a matrix")
     if not self.is_numerical() or not m.is_numerical():
       raise TypeError("Matrix multiplication only implemented for numerical "
                       "matrices")
+    if self.dim[1] != m.dim[0]:
+      raise ValueError("Number of columns in the left matrix must match number "
+                       "of rows in right matrix")
 
-    raise NotImplementedError
+    r = [[0 for _ in range(self.dim[0])] for _ in range(m.dim[1])]
+    for i in range(self.dim[0]):
+      for j in range(m.dim[1]):
+        row = self.array[i]
+        col = [m.array[k][j] for k in range(m.dim[0])]
+        r[i][j] = dot_product(row, col)
+    return Matrix(r)
 
   def __rmul__(self, a: int | float | complex) -> Matrix:
     """Scalar multiplication."""
