@@ -266,7 +266,22 @@ class Matrix:
       raise TypeError("Determinant only defined for numerical matrices")
     if not self.is_square():
       raise TypeError("Determinant only defined for square matrices")
-    raise NotImplementedError("Determinant not implemented")
+
+    dim = self.dim[0]
+    if dim == 0:
+      return None
+    if dim == 1:
+      return self[0,0]
+    if dim == 2:
+      return self[0,0] * self[1,1] - self[0,1] * self[1,0]
+
+    d = 0
+    for i in range(dim):
+      r = self[0,i] * self.minor(0, i).determinant()
+      if i % 2:
+        r *= -1
+      d += r
+    return d
 
   def det(self):
     """Returns the determinant of this matrix. Alias for Matrix.determinant"""
@@ -278,6 +293,9 @@ class Matrix:
       raise TypeError("Inverse only defined for numerical matrices")
     if not self.is_square():
       raise TypeError("Inverse only defined for square matrices")
+    d = self.determinant()
+    if d == 0:
+      raise ArithmeticError("Matrix not invertible")
     raise NotImplementedError("Matrix inversion not implemented")
 
   def rank(self):
