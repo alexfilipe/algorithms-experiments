@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Any
 
+SCALAR_TYPES = {int, float, complex}
+
 class Matrix:
   """Class to represent a matrix, supporting elementary unary and binary
   operations.
@@ -31,10 +33,11 @@ class Matrix:
     if rows == 0 or cols == 0:
       self.type = None
     else:
+      # TODO: check for `first` not-None type instead
       self.type = type(self.array[0][0])
 
     if fillna is not None and not isinstance(fillna, self.type):
-      raise ValueError("fillna type must match matrix type")
+      raise TypeError("fillna type must match matrix type")
 
     if fillna is None and self.type is not None:
       if self.type is int:
@@ -49,6 +52,9 @@ class Matrix:
     # Normalize matrix, fill missing entries with zeros
     for row in self.array:
       if len(row) != cols:
+        if fillna is None and self.type is not None:
+          raise TypeError("fillna must be provided for nonbasic types (int, float, complex, str, "
+                          "None) when there are incomplete rows")
         row[:] = row + [fillna] * (cols - len(row))
 
     # Check if matrix is a single type
@@ -85,6 +91,11 @@ class Matrix:
     raise NotImplementedError
 
   def __add__(self, m: Matrix) -> Matrix:
+    """Matrix addition."""
+    if not isinstance(m, Matrix):
+      raise TypeError("Addition only supported between matrices")
+    if self.type not in SCALAR_TYPES and m.type not in SCALAR_TYPES:
+      raise TypeError("Addition only supported between numerical type matrices")
     if self.dim != m.dim:
       raise ValueError("Matrices must have the same dimension")
     rows, cols = self.dim
@@ -94,7 +105,17 @@ class Matrix:
     return self
 
   def __mul__(self, m: Matrix) -> Matrix:
-    raise NotImplementedError("Matrix multiplication not implemented.")
+    """Matrix multiplication."""
+    if self.type is not m.type:
+      raise TypeError("Matrices must have same type")
+    raise NotImplementedError
+
+  def __rmul__(self, a: int | float | complex) -> Matrix:
+    """Scalar multiplication."""
+    if all(not isinstance(a, t) for t in SCALAR_TYPES):
+      raise ValueError("Left operand must be a matrix or scalar")
+
+    return Matrix([[a * elt for elt in row] for row in self.array])
 
   def determinant(self):
     """Returns the determinant of this matrix."""
