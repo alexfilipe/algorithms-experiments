@@ -72,15 +72,21 @@ class Matrix:
     r += f"\n<linalg.Matrix dim={self.dim} type={self.type}>"
     return r
 
+  def copy(self) -> Matrix:
+    """Returns a (shallow) copy of this matrix."""
+    rows, cols = self.dim
+    return Matrix([[self.array[i][j] for j in range(cols)]
+                   for i in range(rows)])
+
+  def is_numerical(self) -> bool:
+    """Returns True if this matrix is a numerical matrix."""
+    return self.type in NUMERICAL_TYPES
+
   def transpose(self) -> Matrix:
     """Returns the transpose of this matrix."""
     rows, cols = self.dim
     return Matrix([[self.array[i][j] for i in range(rows)]
                    for j in range(cols)])
-
-  def is_numerical(self) -> bool:
-    """Returns True if this matrix is a numerical matrix."""
-    return self.type in NUMERICAL_TYPES
 
   @property
   def T(self) -> Matrix:
@@ -95,8 +101,7 @@ class Matrix:
                       "matrices")
 
     if self.type in [int, float]:
-      return self
-
+      return self.copy()
     transposed = self.transpose().array
     return Matrix([[elt.conjugate() for elt in row] for row in transposed])
 
