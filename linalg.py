@@ -17,17 +17,15 @@ def dot_product(a: list[Number], b: list[Number]) -> Number:
   return sum(x * y for x, y in zip(a, b))
 
 class Matrix:
-  """Class to represent a matrix, supporting elementary unary and binary
-  operations.
+  """Class to represent a matrix, supporting elementary unary and binary operations.
 
-  Matrices are strictly typed. The type is automatically inferred from the first
-  element. This constructor supports incomplete rows and fills them accordingly
-  with the parameter `fillna` or zero-like values for basic Python types.
+  Matrices are strictly typed. The type is automatically inferred from the first element. This
+  constructor supports incomplete rows and fills them accordingly with the parameter `fillna` or
+  zero-like values for basic Python types.
 
   Args:
     array: A list of lists representing the elements
-    fillna: Value to fill for missing elements at the end of each row. Must
-    match matrix type.
+    fillna: Value to fill for missing elements at the end of each row. Must match matrix type.
   """
 
   def __init__(self, array: list[list], fillna: Any | None = None):
@@ -50,19 +48,17 @@ class Matrix:
       self.dtype = type(self.array[0][0])
 
     if fillna is not None and not isinstance(fillna, self.dtype):
-      raise TypeError("fillna type must match matrix type")
+      raise TypeError(f"fillna type ({type(fillna)}) must match matrix type ({self.dtype})")
 
-    if fillna is None and self.dtype is not None:
-      if self.dtype in ZEROS:
-        fillna = ZEROS[self.dtype]
+    if fillna is None and self.dtype is not None and self.dtype in ZEROS:
+      fillna = ZEROS[self.dtype]
 
-    # Normalize matrix, fill missing entries with zeros
+    # Normalize matrix, fill missing entries with default value
     for row in self.array:
       if len(row) != cols:
         if fillna is None and self.dtype is not None:
-          raise TypeError("fillna must be provided for nonbasic types (int, "
-                          "float, complex, str, None) when there are "
-                          "incomplete rows")
+          raise TypeError("fillna must be provided for nonbasic types (int, float, complex, str, "
+                          "None) when there are incomplete rows")
         row[:] = row + [fillna] * (cols - len(row))
 
     # Check if matrix is a single type
@@ -81,6 +77,10 @@ class Matrix:
 
   def __eq__(self, m: Matrix) -> bool:
     """Matrix equality."""
+    if m == 0:
+      m = Matrix.zero(self.dim)
+    if m == 1:
+      m = Matrix.identity(self.dim)
     if not isinstance(m, Matrix):
       raise TypeError("Equality only implemented between matrices")
     if self.dim != m.dim:
@@ -99,22 +99,27 @@ class Matrix:
                    for i in range(rows)])
 
   @classmethod
-  def identity(cls, dim: int = 0, dtype: Type = int) -> Matrix:
-    """Returns the identity matrix of a given dimension and type."""
+  def identity(cls, dim: int | tuple[int, int] = 0, dtype: Type = int) -> Matrix:
+    """Returns the identity matrix of a given dimension and type. For compatibility, allows
+    tuples (assumes the first tuple element as the dimension)."""
+    if isinstance(dim, tuple):
+      dim = dim[0]
     one = ONES.get(dtype, ONES[int])
     zero = ZEROS.get(dtype, ZEROS[int])
     return cls([[one if i == j else zero for j in range(dim)] for i in range(dim)])
 
   @classmethod
-  def id(cls, dim: int = 0, dtype: Type = int) -> Matrix:
+  def id(cls, dim: int | tuple[int, int] = 0, dtype: Type = int) -> Matrix:
     """Alias of Matrix.identity."""
-    return cls.identity(dim)
+    return cls.identity(dim, dtype)
 
   @classmethod
-  def zero(cls, dim: int = 0, dtype: Type = int) -> Matrix:
+  def zero(cls, dim: int | tuple[int, int] = 0, dtype: Type = int) -> Matrix:
     """Returns the zero matrix of a given dimension and type."""
+    if isinstance(dim, int):
+      dim = (dim, dim)
     zero = ZEROS.get(dtype, ZEROS[int])
-    return cls([[zero for _ in range(dim)] for _ in range(dim)])
+    return cls([[zero for _ in range(dim[1])] for _ in range(dim[0])])
 
   def is_numerical(self) -> bool:
     """Returns True if this matrix is a numerical matrix."""
@@ -132,11 +137,9 @@ class Matrix:
     return self.transpose()
 
   def conj_transpose(self) -> Matrix:
-    """Returns the conjugate transpose of this matrix. Implemented only for
-    complex matrices."""
+    """Returns the conjugate transpose of this matrix. Implemented only for complex matrices."""
     if not self.is_numerical():
-      raise TypeError("Conjugate transpose is only implemented for numerical "
-                      "matrices")
+      raise TypeError("Conjugate transpose is only implemented for numerical matrices")
 
     if self.dtype in [int, float]:
       return self.copy()
@@ -150,6 +153,10 @@ class Matrix:
 
   def __add__(self, m: Matrix) -> Matrix:
     """Matrix addition."""
+    if m == 0:
+      m = Matrix.zero(self.dim)
+    if m == 1:
+      m = Matrix.identity(self.dim)
     if not isinstance(m, Matrix):
       raise TypeError("Addition only supported between matrices")
     if not self.is_numerical() or not m.is_numerical():
@@ -167,13 +174,12 @@ class Matrix:
     if type(m) in NUMERICAL_TYPES:
       return self.__rmul__(m)
     if not isinstance(m, Matrix):
-      raise TypeError("Right operand must be a matrix or scalar")
+      raise TypeError(f"Right operand (type={type(m)}) must be a matrix or scalar")
     if not self.is_numerical() or not m.is_numerical():
-      raise TypeError("Matrix multiplication only implemented for numerical "
-                      "matrices")
+      raise TypeError("Matrix multiplication only implemented for numerical matrices")
     if self.dim[1] != m.dim[0]:
-      raise ValueError("Number of columns in the left matrix must match number "
-                       "of rows in right matrix")
+      raise ValueError("Number of columns in the left matrix must match number of rows in right "
+                       "matrix")
     r = [[0 for _ in range(m.dim[1])] for _ in range(self.dim[0])]
     for i in range(self.dim[0]):
       for j in range(m.dim[1]):
@@ -185,14 +191,19 @@ class Matrix:
   def __rmul__(self, a: int | float | complex) -> Matrix:
     """Scalar multiplication."""
     if all(not isinstance(a, t) for t in NUMERICAL_TYPES):
-      raise TypeError("Left operand must be a matrix or scalar")
+      raise TypeError(f"Left operand (type={type(a)}) must be a matrix or scalar")
     return Matrix([[a * elt for elt in row] for row in self.array])
 
   def __pow__(self, n: int) -> Matrix:
     """Integer exponentiation."""
     if not isinstance(n, int):
-      raise NotImplementedError("Exponentiation only implemented for integer "
-                                "powers")
+      raise NotImplementedError("Exponentiation only implemented for integer powers")
+    if n == 0:
+      return Matrix.identity(self.dim)
+    if n == -1:
+      return self.inverse()
+    if n < -1:
+      return (self ** -1) ** n
     return reduce(op.mul, (self for _ in range(n)))
 
   def __neg__(self) -> Matrix:
@@ -203,11 +214,25 @@ class Matrix:
     """Matrix subtraction."""
     return self + -m
 
+  def minor(self, i: int, j: int) -> Matrix:
+    """Returns the minor of this matrix at position i,j (matrix obtained by removing the ith row and
+    jth column of this matrix).
+
+    Args:
+      i: index of the row to be removed
+      j: index of the column to be removed
+    """
+    rows, cols = self.dim
+    if i >= rows or j >= cols:
+      raise IndexError("Position out of range")
+    return Matrix([[self.array[r][c] for c in range(cols) if c != j]
+                   for r in range(rows) if r != i])
+
   def determinant(self):
     """Returns the determinant of this matrix."""
     if not self.is_numerical():
       raise TypeError("Determinant only supported for numerical matrices")
-    raise NotImplementedError
+    raise NotImplementedError("Determinant not implemented")
 
   def det(self):
     """Returns the determinant of this matrix. Alias for Matrix.determinant"""
@@ -215,4 +240,4 @@ class Matrix:
 
   def inverse(self):
     """Returns the inverse of this matrix."""
-    raise NotImplementedError
+    raise NotImplementedError("Matrix inversion not implemented")
