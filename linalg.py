@@ -94,6 +94,30 @@ class Matrix:
           return False
     return True
 
+  def __getitem__(self, index: int | tuple[int, int]) -> Any:
+    if isinstance(index, int):
+      return self.array[index]
+    elif isinstance(index, tuple) and len(index) == 2:
+      i, j = index
+      return self.array[i][j]
+    raise IndexError("Index must be an integer or tuple of integers")
+
+  def __setitem__(self, index: int | tuple[int, int], value: Any) -> Any:
+    if value is not None and not isinstance(value, self.dtype):
+      raise ValueError(f"Cannot set value of type {type(value)} to matrix of type {self.dtype}")
+    if isinstance(index, int):
+      if not isinstance(value, list):
+        raise ValueError(f"Must set row to list type, not {type(value)}")
+      if len(value) != self.dim[1]:
+        raise ValueError(f"Must set row to same dimension as matrix (expected {self.dim[1]}, got "
+                         f"{len(value)})")
+      self.array[index][:] = value
+    elif isinstance(index, tuple) and len(index) == 2:
+      i, j = index
+      self.array[i][j] = value
+      return self.array[i][j]
+    raise IndexError("Index must be an integer or tuple of integers")
+
   def copy(self) -> Matrix:
     """Returns a (shallow) copy of this matrix."""
     rows, cols = self.dim
@@ -146,7 +170,6 @@ class Matrix:
     """Returns the conjugate transpose of this matrix. Implemented only for complex matrices."""
     if not self.is_numerical():
       raise TypeError("Conjugate transpose is only implemented for numerical matrices")
-
     if self.dtype in [int, float]:
       return self.copy()
     transposed = self.transpose().array
@@ -168,7 +191,7 @@ class Matrix:
     if not self.is_numerical() or not m.is_numerical():
       raise TypeError("Addition only supported between numerical matrices")
     if self.dim != m.dim:
-      raise ValueError("Matrices must have the same dimension")
+      raise ValueError("Matrices must have same dimension")
     rows, cols = self.dim
     for i in range(rows):
       for j in range(cols):
@@ -212,6 +235,8 @@ class Matrix:
     """Integer exponentiation."""
     if not isinstance(n, int):
       raise NotImplementedError("Exponentiation only implemented for integer powers")
+    if not self.is_square():
+      raise ValueError("Exponentiation only defined for square matrices")
     if n == 0:
       return Matrix.identity(self.dim)
     if n == -1:
