@@ -83,12 +83,19 @@ class Matrix:
     return self.transpose()
 
   def conj_transpose(self) -> Matrix:
-    """Implemented only for complex matrices. Returns the conjugate transpose of
-    this matrix."""
+    """Returns the conjugate transpose of this matrix. Implemented only for
+    complex matrices."""
     if self.type != complex:
-      raise ValueError("Conjugate transpose is only implemented for complex "
-                       "matrices")
-    raise NotImplementedError
+      raise TypeError("Conjugate transpose is only implemented for complex "
+                      "matrices")
+
+    transposed = self.transpose().array
+    return Matrix([[elt.conjugate() for elt in row] for row in transposed])
+
+  @property
+  def H(self) -> Matrix:
+    """Conjugate transpose of this matrix."""
+    return self.conj_transpose()
 
   def __add__(self, m: Matrix) -> Matrix:
     """Matrix addition."""
@@ -98,6 +105,7 @@ class Matrix:
       raise TypeError("Addition only supported between numerical type matrices")
     if self.dim != m.dim:
       raise ValueError("Matrices must have the same dimension")
+
     rows, cols = self.dim
     for i in range(rows):
       for j in range(cols):
@@ -108,6 +116,7 @@ class Matrix:
     """Matrix multiplication."""
     if self.type is not m.type:
       raise TypeError("Matrices must have same type")
+
     raise NotImplementedError
 
   def __rmul__(self, a: int | float | complex) -> Matrix:
