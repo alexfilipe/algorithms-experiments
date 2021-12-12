@@ -5,37 +5,56 @@ class Matrix:
   """Class to represent a matrix, supporting elementary unary and binary
   operations.
 
+  Matrices are strictly typed. The type is automatically inferred from the first
+  element. This constructor supports incomplete rows and fills them accordingly
+  with the parameter `fillna` or zero-like values for basic Python types.
+
   Args:
     array: A list of lists representing the elements
+    fillna: Value to fill for missing elements at the end of each row. Must
+    match matrix type.
   """
 
-  def __init__(self, array: list[list[Any]], fillna: Any | None = 0):
+  def __init__(self, array: list[list[Any]], fillna: Any | None = None):
     self.array = array
     if not array or not any(row for row in array):
       self.array = []
 
     for row in self.array:
       if not isinstance(row, list):
-        raise ValueError("All rows must be lists")
+        raise TypeError("All rows must be lists")
 
     rows = len(self.array)
     cols = max(len(row) for row in self.array) if rows else 0
     self.dim = rows, cols
-
-    # Normalize matrix, fill missing entries with zeros
-    for row in self.array:
-      if len(row) != cols:
-        row[:] = row + [fillna] * (cols - len(row))
 
     if rows == 0 or cols == 0:
       self.type = None
     else:
       self.type = type(self.array[0][0])
 
+    if fillna is not None and not isinstance(fillna, self.type):
+      raise ValueError("fillna type must match matrix type")
+
+    if fillna is None and self.type is not None:
+      if self.type is int:
+        fillna = 0
+      elif self.type is float:
+        fillna = 0.
+      elif self.type is complex:
+        fillna = 0j
+      elif self.type is str:
+        fillna = ''
+
+    # Normalize matrix, fill missing entries with zeros
+    for row in self.array:
+      if len(row) != cols:
+        row[:] = row + [fillna] * (cols - len(row))
+
     # Check if matrix is a single type
     for row in self.array:
       for elt in row:
-        if not isinstance(elt, self.type):
+        if elt is not None and not isinstance(elt, self.type):
           raise ValueError("All elements must have the same type")
 
   def __str__(self):
