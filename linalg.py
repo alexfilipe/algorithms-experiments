@@ -1,4 +1,6 @@
 from __future__ import annotations
+import operator as op
+from functools import reduce
 from numbers import Number
 from typing import Any
 
@@ -157,6 +159,13 @@ class Matrix:
       raise TypeError("Left operand must be a matrix or scalar")
 
     return Matrix([[a * elt for elt in row] for row in self.array])
+
+  def __pow__(self, n: int) -> Matrix:
+    """Integer exponentiation."""
+    if not isinstance(n, int):
+      raise NotImplementedError("Exponentiation only implemented for integer "
+                                "powers")
+    return reduce(op.mul, (self for _ in range(n)))
 
   def determinant(self):
     """Returns the determinant of this matrix."""
