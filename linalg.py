@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any
 
-SCALAR_TYPES = {int, float, complex}
+NUMERICAL_TYPES = {int, float, complex}
 
 class Matrix:
   """Class to represent a matrix, supporting elementary unary and binary
@@ -17,7 +17,7 @@ class Matrix:
     match matrix type.
   """
 
-  def __init__(self, array: list[list[Any]], fillna: Any | None = None):
+  def __init__(self, array: list[list], fillna: Any | None = None):
     self.array = array
     if not array or not any(row for row in array):
       self.array = []
@@ -53,8 +53,9 @@ class Matrix:
     for row in self.array:
       if len(row) != cols:
         if fillna is None and self.type is not None:
-          raise TypeError("fillna must be provided for nonbasic types (int, float, complex, str, "
-                          "None) when there are incomplete rows")
+          raise TypeError("fillna must be provided for nonbasic types (int, "
+                          "float, complex, str, None) when there are "
+                          "incomplete rows")
         row[:] = row + [fillna] * (cols - len(row))
 
     # Check if matrix is a single type
@@ -77,6 +78,10 @@ class Matrix:
     return Matrix([[self.array[i][j] for i in range(rows)]
                    for j in range(cols)])
 
+  def is_numerical(self) -> bool:
+    """Returns True if this matrix is a numerical matrix."""
+    return self.type in NUMERICAL_TYPES
+
   @property
   def T(self) -> Matrix:
     """Transpose of this matrix."""
@@ -85,9 +90,12 @@ class Matrix:
   def conj_transpose(self) -> Matrix:
     """Returns the conjugate transpose of this matrix. Implemented only for
     complex matrices."""
-    if self.type != complex:
-      raise TypeError("Conjugate transpose is only implemented for complex "
+    if not self.is_numerical():
+      raise TypeError("Conjugate transpose is only implemented for numerical "
                       "matrices")
+
+    if self.type in [int, float]:
+      return self
 
     transposed = self.transpose().array
     return Matrix([[elt.conjugate() for elt in row] for row in transposed])
@@ -101,8 +109,8 @@ class Matrix:
     """Matrix addition."""
     if not isinstance(m, Matrix):
       raise TypeError("Addition only supported between matrices")
-    if self.type not in SCALAR_TYPES and m.type not in SCALAR_TYPES:
-      raise TypeError("Addition only supported between numerical type matrices")
+    if not self.is_numerical() or not m.is_numerical():
+      raise TypeError("Addition only supported between numerical matrices")
     if self.dim != m.dim:
       raise ValueError("Matrices must have the same dimension")
 
@@ -114,20 +122,23 @@ class Matrix:
 
   def __mul__(self, m: Matrix) -> Matrix:
     """Matrix multiplication."""
-    if self.type is not m.type:
-      raise TypeError("Matrices must have same type")
+    if not self.is_numerical() or not m.is_numerical():
+      raise TypeError("Matrix multiplication only implemented for numerical "
+                      "matrices")
 
     raise NotImplementedError
 
   def __rmul__(self, a: int | float | complex) -> Matrix:
     """Scalar multiplication."""
-    if all(not isinstance(a, t) for t in SCALAR_TYPES):
-      raise ValueError("Left operand must be a matrix or scalar")
+    if all(not isinstance(a, t) for t in NUMERICAL_TYPES):
+      raise TypeError("Left operand must be a matrix or scalar")
 
     return Matrix([[a * elt for elt in row] for row in self.array])
 
   def determinant(self):
     """Returns the determinant of this matrix."""
+    if not self.is_numerical():
+      raise TypeError("Determinant only supported for numerical matrices")
     raise NotImplementedError
 
   def det(self):
