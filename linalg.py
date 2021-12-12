@@ -106,7 +106,7 @@ class Matrix:
     return cls([[one if i == j else zero for j in range(dim)] for i in range(dim)])
 
   @classmethod
-  def id(cls, dim: int = 0) -> Matrix:
+  def id(cls, dim: int = 0, dtype: Type = int) -> Matrix:
     """Alias of Matrix.identity."""
     return cls.identity(dim)
 
@@ -162,10 +162,12 @@ class Matrix:
         self.array[i][j] += m.array[i][j]
     return self
 
-  def __mul__(self, m: Matrix) -> Matrix:
+  def __mul__(self, m: Matrix | int | float | complex) -> Matrix:
     """Matrix multiplication (brute force)."""
+    if type(m) in NUMERICAL_TYPES:
+      return self.__rmul__(m)
     if not isinstance(m, Matrix):
-      raise TypeError("Right operand must be a matrix")
+      raise TypeError("Right operand must be a matrix or scalar")
     if not self.is_numerical() or not m.is_numerical():
       raise TypeError("Matrix multiplication only implemented for numerical "
                       "matrices")
