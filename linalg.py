@@ -83,6 +83,19 @@ class Matrix:
     r += f"\n<linalg.Matrix dim={self.dim} type={self.type}>"
     return r
 
+  def __eq__(self, m: Matrix) -> bool:
+    """Matrix equality."""
+    if not isinstance(m, Matrix):
+      raise TypeError("Equality only implemented between matrices")
+    if self.dim != m.dim:
+      return False
+    rows, cols = self.dim
+    for i in range(rows):
+      for j in range(cols):
+        if self.array[i][j] != m.array[i][j]:
+          return False
+    return True
+
   def copy(self) -> Matrix:
     """Returns a (shallow) copy of this matrix."""
     rows, cols = self.dim
@@ -147,7 +160,7 @@ class Matrix:
       raise ValueError("Number of columns in the left matrix must match number "
                        "of rows in right matrix")
 
-    r = [[0 for _ in range(self.dim[0])] for _ in range(m.dim[1])]
+    r = [[0 for _ in range(m.dim[1])] for _ in range(self.dim[0])]
     for i in range(self.dim[0]):
       for j in range(m.dim[1]):
         row = self.array[i]
@@ -168,6 +181,14 @@ class Matrix:
       raise NotImplementedError("Exponentiation only implemented for integer "
                                 "powers")
     return reduce(op.mul, (self for _ in range(n)))
+
+  def __neg__(self) -> Matrix:
+    """Negative of this matrix."""
+    return -1 * self
+
+  def __sub__(self, m: Matrix) -> Matrix:
+    """Matrix subtraction."""
+    return self + -m
 
   def determinant(self):
     """Returns the determinant of this matrix."""
