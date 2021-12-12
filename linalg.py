@@ -4,9 +4,11 @@ from __future__ import annotations
 import operator as op
 from functools import reduce
 from numbers import Number
-from typing import Any
+from typing import Any, Type
 
 NUMERICAL_TYPES = {int, float, complex}
+ZEROS = {int: 0, float: 0., complex: 0j}
+ONES = {int: 1, float: 1., complex: 1+0j}
 
 def dot_product(a: list[Number], b: list[Number]) -> Number:
   """Returns the dot product of the two vectors."""
@@ -42,28 +44,22 @@ class Matrix:
     self.dim = rows, cols
 
     if rows == 0 or cols == 0:
-      self.type = None
+      self.dtype = None
     else:
       # TODO: check for `first` not-None type instead
-      self.type = type(self.array[0][0])
+      self.dtype = type(self.array[0][0])
 
-    if fillna is not None and not isinstance(fillna, self.type):
+    if fillna is not None and not isinstance(fillna, self.dtype):
       raise TypeError("fillna type must match matrix type")
 
-    if fillna is None and self.type is not None:
-      if self.type is int:
-        fillna = 0
-      elif self.type is float:
-        fillna = 0.
-      elif self.type is complex:
-        fillna = 0j
-      elif self.type is str:
-        fillna = ''
+    if fillna is None and self.dtype is not None:
+      if self.dtype in ZEROS:
+        fillna = ZEROS[self.dtype]
 
     # Normalize matrix, fill missing entries with zeros
     for row in self.array:
       if len(row) != cols:
-        if fillna is None and self.type is not None:
+        if fillna is None and self.dtype is not None:
           raise TypeError("fillna must be provided for nonbasic types (int, "
                           "float, complex, str, None) when there are "
                           "incomplete rows")
@@ -72,7 +68,7 @@ class Matrix:
     # Check if matrix is a single type
     for row in self.array:
       for elt in row:
-        if elt is not None and not isinstance(elt, self.type):
+        if elt is not None and not isinstance(elt, self.dtype):
           raise ValueError("All elements must have the same type")
 
   def __str__(self):
@@ -80,7 +76,7 @@ class Matrix:
 
   def __repr__(self):
     r = "\n".join(" ".join(str(c) for c in r) for r in self.array)
-    r += f"\n<linalg.Matrix dim={self.dim} type={self.type}>"
+    r += f"\n<linalg.Matrix dim={self.dim} type={self.dtype}>"
     return r
 
   def __eq__(self, m: Matrix) -> bool:
@@ -102,9 +98,27 @@ class Matrix:
     return Matrix([[self.array[i][j] for j in range(cols)]
                    for i in range(rows)])
 
+  @classmethod
+  def identity(cls, dim: int = 0, dtype: Type = int) -> Matrix:
+    """Returns the identity matrix of a given dimension and type."""
+    one = ONES.get(dtype, ONES[int])
+    zero = ZEROS.get(dtype, ZEROS[int])
+    return cls([[one if i == j else zero for j in range(dim)] for i in range(dim)])
+
+  @classmethod
+  def id(cls, dim: int = 0) -> Matrix:
+    """Alias of Matrix.identity."""
+    return cls.identity(dim)
+
+  @classmethod
+  def zero(cls, dim: int = 0, dtype: Type = int) -> Matrix:
+    """Returns the zero matrix of a given dimension and type."""
+    zero = ZEROS.get(dtype, ZEROS[int])
+    return cls([[zero for _ in range(dim)] for _ in range(dim)])
+
   def is_numerical(self) -> bool:
     """Returns True if this matrix is a numerical matrix."""
-    return self.type in NUMERICAL_TYPES
+    return self.dtype in NUMERICAL_TYPES
 
   def transpose(self) -> Matrix:
     """Returns the transpose of this matrix."""
@@ -124,7 +138,7 @@ class Matrix:
       raise TypeError("Conjugate transpose is only implemented for numerical "
                       "matrices")
 
-    if self.type in [int, float]:
+    if self.dtype in [int, float]:
       return self.copy()
     transposed = self.transpose().array
     return Matrix([[elt.conjugate() for elt in row] for row in transposed])
@@ -142,7 +156,6 @@ class Matrix:
       raise TypeError("Addition only supported between numerical matrices")
     if self.dim != m.dim:
       raise ValueError("Matrices must have the same dimension")
-
     rows, cols = self.dim
     for i in range(rows):
       for j in range(cols):
@@ -159,7 +172,6 @@ class Matrix:
     if self.dim[1] != m.dim[0]:
       raise ValueError("Number of columns in the left matrix must match number "
                        "of rows in right matrix")
-
     r = [[0 for _ in range(m.dim[1])] for _ in range(self.dim[0])]
     for i in range(self.dim[0]):
       for j in range(m.dim[1]):
@@ -172,7 +184,6 @@ class Matrix:
     """Scalar multiplication."""
     if all(not isinstance(a, t) for t in NUMERICAL_TYPES):
       raise TypeError("Left operand must be a matrix or scalar")
-
     return Matrix([[a * elt for elt in row] for row in self.array])
 
   def __pow__(self, n: int) -> Matrix:
