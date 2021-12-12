@@ -10,11 +10,13 @@ NUMERICAL_TYPES = {int, float, complex}
 ZEROS = {int: 0, float: 0., complex: 0j}
 ONES = {int: 1, float: 1., complex: 1+0j}
 
+
 def dot_product(a: list[Number], b: list[Number]) -> Number:
   """Returns the dot product of the two vectors."""
   if len(a) != len(b):
     raise ValueError("Vectors must have same dimension")
   return sum(x * y for x, y in zip(a, b))
+
 
 class Matrix:
   """Class to represent a matrix, supporting elementary unary and binary operations.
@@ -79,7 +81,7 @@ class Matrix:
     """Matrix equality."""
     if m == 0:
       m = Matrix.zero(self.dim)
-    if m == 1:
+    if m == 1 and self.is_square():
       m = Matrix.identity(self.dim)
     if not isinstance(m, Matrix):
       raise TypeError("Equality only implemented between matrices")
@@ -125,6 +127,10 @@ class Matrix:
     """Returns True if this matrix is a numerical matrix."""
     return self.dtype in NUMERICAL_TYPES
 
+  def is_square(self) -> bool:
+    """Returns True if this matrix is a square matrix."""
+    return self.dim[0] == self.dim[1]
+
   def transpose(self) -> Matrix:
     """Returns the transpose of this matrix."""
     rows, cols = self.dim
@@ -155,7 +161,7 @@ class Matrix:
     """Matrix addition."""
     if m == 0:
       m = Matrix.zero(self.dim)
-    if m == 1:
+    if m == 1 and self.is_square():
       m = Matrix.identity(self.dim)
     if not isinstance(m, Matrix):
       raise TypeError("Addition only supported between matrices")
@@ -194,6 +200,14 @@ class Matrix:
       raise TypeError(f"Left operand (type={type(a)}) must be a matrix or scalar")
     return Matrix([[a * elt for elt in row] for row in self.array])
 
+  def __neg__(self) -> Matrix:
+    """Negative of this matrix."""
+    return -1 * self
+
+  def __sub__(self, m: Matrix) -> Matrix:
+    """Matrix subtraction."""
+    return self + -m
+
   def __pow__(self, n: int) -> Matrix:
     """Integer exponentiation."""
     if not isinstance(n, int):
@@ -205,14 +219,6 @@ class Matrix:
     if n < -1:
       return (self ** -1) ** n
     return reduce(op.mul, (self for _ in range(n)))
-
-  def __neg__(self) -> Matrix:
-    """Negative of this matrix."""
-    return -1 * self
-
-  def __sub__(self, m: Matrix) -> Matrix:
-    """Matrix subtraction."""
-    return self + -m
 
   def minor(self, i: int, j: int) -> Matrix:
     """Returns the minor of this matrix at position i,j (matrix obtained by removing the ith row and
@@ -231,7 +237,9 @@ class Matrix:
   def determinant(self):
     """Returns the determinant of this matrix."""
     if not self.is_numerical():
-      raise TypeError("Determinant only supported for numerical matrices")
+      raise TypeError("Determinant only defined for numerical matrices")
+    if not self.is_square():
+      raise TypeError("Determinant only defined for square matrices")
     raise NotImplementedError("Determinant not implemented")
 
   def det(self):
@@ -240,4 +248,27 @@ class Matrix:
 
   def inverse(self):
     """Returns the inverse of this matrix."""
+    if not self.is_numerical():
+      raise TypeError("Inverse only defined for numerical matrices")
+    if not self.is_square():
+      raise TypeError("Inverse only defined for square matrices")
     raise NotImplementedError("Matrix inversion not implemented")
+
+  def rank(self):
+    """Returns the rank of this matrix."""
+    raise NotImplementedError("Rank not implemented")
+
+
+def dim(A: Matrix) -> tuple[int, int]:
+  """Returns the dimension of the given matrix."""
+  return A.dim
+
+
+def minor(A: Matrix, i: int, j: int) -> Matrix:
+  """Returns the minor of the given matrix at the given position i, j."""
+  return A.minor(i, j)
+
+
+def det(A: Matrix) -> Number:
+  """Returns the determinant of the given matrix."""
+  return A.determinant()
