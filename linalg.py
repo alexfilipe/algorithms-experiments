@@ -217,7 +217,7 @@ class Matrix:
     if n == -1:
       return self.inverse()
     if n < -1:
-      return (self ** -1) ** n
+      return (self ** -1) ** -n
     return reduce(op.mul, (self for _ in range(n)))
 
   def minor(self, i: int, j: int) -> Matrix:
