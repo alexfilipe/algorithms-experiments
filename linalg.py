@@ -103,8 +103,6 @@ class Matrix:
     raise IndexError("Index must be an integer or tuple of integers")
 
   def __setitem__(self, index: int | tuple[int, int], value: Any) -> Any:
-    if value is not None and not isinstance(value, self.dtype):
-      raise ValueError(f"Cannot set value of type {type(value)} to matrix of type {self.dtype}")
     if isinstance(index, int):
       if not isinstance(value, list):
         raise ValueError(f"Must set row to list type, not {type(value)}")
@@ -113,6 +111,8 @@ class Matrix:
                          f"{len(value)})")
       self.array[index][:] = value
     elif isinstance(index, tuple) and len(index) == 2:
+      if value is not None and not isinstance(value, self.dtype):
+        raise ValueError(f"Cannot set value of type {type(value)} to matrix of type {self.dtype}")
       i, j = index
       self.array[i][j] = value
       return self.array[i][j]
@@ -158,8 +158,7 @@ class Matrix:
   def transpose(self) -> Matrix:
     """Returns the transpose of this matrix."""
     rows, cols = self.dim
-    return Matrix([[self.array[i][j] for i in range(rows)]
-                   for j in range(cols)])
+    return Matrix([[self.array[i][j] for i in range(rows)] for j in range(cols)])
 
   @property
   def T(self) -> Matrix:
@@ -183,7 +182,7 @@ class Matrix:
   def __add__(self, m: Matrix) -> Matrix:
     """Matrix addition."""
     if m == 0:
-      m = Matrix.zero(self.dim)
+      return self.copy()
     if m == 1 and self.is_square():
       m = Matrix.identity(self.dim)
     if not isinstance(m, Matrix):
@@ -219,6 +218,8 @@ class Matrix:
 
   def __rmul__(self, a: int | float | complex) -> Matrix:
     """Scalar multiplication."""
+    if a == 1:
+      return self.copy()
     if all(not isinstance(a, t) for t in NUMERICAL_TYPES):
       raise TypeError(f"Left operand (type={type(a)}) must be a matrix or scalar")
     return Matrix([[a * elt for elt in row] for row in self.array])
