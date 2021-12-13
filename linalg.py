@@ -10,6 +10,7 @@ from typing import Any, Iterable, Union
 Number = Union[int, float, complex]
 NoneType = type(None)
 
+TYPES: list[type] = [NoneType, str, int, float, complex]
 NUMERICAL_TYPES: list[type] = [int, float, complex]  # types in containment order
 ZEROS: dict[type, Number] = {int: 0, float: 0., complex: 0j}
 ONES: dict[type, Number] = {int: 1, float: 1., complex: 1+0j}
@@ -35,9 +36,9 @@ def type_compatible(value: Any, dtype: type) -> bool:
   return isinstance(value, dtype)
 
 
-def is_numerical_subset(dtype1: type, dtype2: type) -> bool:
+def is_subset(dtype1: type, dtype2: type) -> bool:
   """Returns True if the first numerical type is a strict subset of the second type."""
-  return NUMERICAL_TYPES.index(dtype1) < NUMERICAL_TYPES.index(dtype2)
+  return TYPES.index(dtype1) < TYPES.index(dtype2)
 
 
 class Matrix:
@@ -74,9 +75,12 @@ class Matrix:
     self.dim = (rows, cols)
 
     if rows != 0 and cols != 0:
-      # TODO: check for first not-None (most compatible -- Number) type instead
-      # Find most common type
-      self.dtype = type(self.array[0][0])
+      self.dtype = TYPES[0]
+      # Find maxmimum common type
+      for row in self.array:
+        for elt in row:
+          if is_subset(self.dtype, type(elt)):
+            self.dtype = type(elt)
 
     if fillna is not None and not type_compatible(fillna, self.dtype):
       # TODO typecast numerical types to the most common type
@@ -163,7 +167,7 @@ class Matrix:
         if value is not None and not type_compatible(value, self.dtype):
           raise ValueError(f"Cannot set value of type {type(value)} to matrix of type {self.dtype}")
         # Change main type to accommodate new introduced type
-        elif is_numerical(value) and is_numerical_subset(self.dtype, type(value)):
+        elif is_numerical(value) and is_subset(self.dtype, type(value)):
           self.dtype = type(value)
         i, j = index
         self.array[i][j] = value
