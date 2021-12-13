@@ -77,8 +77,12 @@ class Matrix:
     r += f"\n<linalg.Matrix dim={self.dim} type={self.dtype}>"
     return r
 
-  def __eq__(self, m: Matrix) -> bool:
-    """Matrix equality."""
+  def __eq__(self, m: Matrix | int) -> bool:
+    """Matrix equality.
+
+    Equality is supported between matrices of same dimension, and the integer literals `0` and `1`
+    (representing, respectively, the zero and identity matrices of same dimension).
+    """
     if m == 0:
       m = Matrix.zero(self.dim)
     if m == 1 and self.is_square():
@@ -141,8 +145,11 @@ class Matrix:
 
   @classmethod
   def identity(cls, dim: int | tuple[int, int] = 0, dtype: Type = int) -> Matrix:
-    """Returns the identity matrix of a given dimension and type. For compatibility, allows
-    tuples (assumes the first tuple element as the dimension)."""
+    """Returns the identity matrix of a given dimension and type.
+
+    An identity matrix is a square matrix containing 1s along its diagonal and 0s elsewhere. For
+    compatibility, this method allows tuples (assumes the first tuple element as the dimension).
+    """
     if isinstance(dim, tuple):
       dim = dim[0]
     one = ONES.get(dtype, ONES[int])
@@ -156,7 +163,10 @@ class Matrix:
 
   @classmethod
   def zero(cls, dim: int | tuple[int, int] = 0, dtype: Type = int) -> Matrix:
-    """Returns the zero matrix of a given dimension and type."""
+    """Returns the zero matrix of a given dimension and type.
+
+    A zero matrix is a matrix containing only zeros.
+    """
     if isinstance(dim, int):
       dim = (dim, dim)
     zero = ZEROS.get(dtype, ZEROS[int])
@@ -194,8 +204,10 @@ class Matrix:
     """Conjugate transpose of this matrix."""
     return self.conj_transpose()
 
-  def __add__(self, m: Matrix) -> Matrix:
-    """Matrix addition."""
+  def __add__(self, m: Matrix | int) -> Matrix:
+    """Matrix addition. Supports the integer literals `0` and `1`, representing the zero and
+    identity matrices of same dimension, respectively.
+    """
     if m == 0:
       return self.copy()
     if m == 1 and self.is_square():
@@ -257,7 +269,7 @@ class Matrix:
     """Negative of this matrix."""
     return -1 * self
 
-  def __sub__(self, m: Matrix) -> Matrix:
+  def __sub__(self, m: Matrix | int) -> Matrix:
     """Matrix subtraction."""
     return self + -m
 
