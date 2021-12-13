@@ -117,7 +117,7 @@ class Matrix:
     """Matrix equality.
 
     Equality is supported between matrices of same dimension, and the integer literals `0` and `1`
-    (representing, respectively, the zero and identity matrices Mf same dimension).
+    (representing, respectively, the zero and identity matrices of same dimension).
     """
     if M == 0:
       M = Matrix.zero(self.dim)
@@ -267,7 +267,8 @@ class Matrix:
 
   def naive_mul(self, M: Matrix) -> Matrix:
     """Naive matrix multiplication algorithm."""
-    R: list[list[Number]] = [[0 for _ in range(M.dim[1])] for _ in range(self.dim[0])]
+    zero = ZEROS.get(self.dtype, ZEROS[int])
+    R: list[list[Number]] = [[zero for _ in range(M.dim[1])] for _ in range(self.dim[0])]
     for i in range(self.dim[0]):
       for j in range(M.dim[1]):
         row = self[i]
@@ -313,7 +314,7 @@ class Matrix:
     if a == 1:
       return self.copy()
     if floor:
-      raise NotImplementedError("Floor division not implemented")
+      return Matrix([[int(elt // a) for elt in row] for row in self.array])
     return (1 / a) * self
 
   def __truediv__(self, a: Number) -> Matrix:
