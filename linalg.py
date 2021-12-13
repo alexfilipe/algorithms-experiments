@@ -110,7 +110,7 @@ class Matrix:
     (representing, respectively, the zero and identity matrices Mf same dimension).
     """
     if M == 0:
-      m = Matrix.zero(self.dim)
+      M = Matrix.zero(self.dim)
     if M == 1 and self.is_square():
       M = Matrix.identity(self.dim)
     if not isinstance(M, Matrix):
@@ -238,7 +238,7 @@ class Matrix:
     if M == 0:
       return self.copy()
     if M == 1 and self.is_square():
-      m = Matrix.identity(self.dim)
+      M = Matrix.identity(self.dim)
     if not isinstance(M, Matrix):
       raise TypeError("Addition only supported between matrices")
     if not self.is_numerical() or not M.is_numerical():
@@ -246,10 +246,7 @@ class Matrix:
     if self.dim != M.dim:
       raise ValueError("Matrices must have same dimension")
     rows, cols = self.dim
-    for i in range(rows):
-      for j in range(cols):
-        self[i,j] += M[i,j]
-    return self
+    return Matrix([[self[i,j] + M[i,j] for j in range(cols)] for i in range(rows)])
 
   def strassen_mul(self, M: Matrix) -> Matrix:
     """Multiplication using Strassen's fast matrix multiplication algorithm."""
@@ -257,13 +254,13 @@ class Matrix:
 
   def naive_mul(self, M: Matrix) -> Matrix:
     """Naive matrix multiplication algorithm."""
-    r: list[list[Number]] = [[0 for _ in range(M.dim[1])] for _ in range(self.dim[0])]
+    R: list[list[Number]] = [[0 for _ in range(M.dim[1])] for _ in range(self.dim[0])]
     for i in range(self.dim[0]):
       for j in range(M.dim[1]):
         row = self[i]
         col = [M[k,j] for k in range(M.dim[0])]
-        r[i][j] = dot_product(row, col)
-    return Matrix(r)
+        R[i][j] = dot_product(row, col)
+    return Matrix(R)
 
   def __mul__(self, M: Matrix | Number) -> Matrix:
     """Matrix multiplication."""
@@ -298,6 +295,8 @@ class Matrix:
 
   def __sub__(self, M: Matrix | int) -> Matrix:
     """Matrix subtraction."""
+    if M == 1:
+      M = Matrix.identity(self.dim)
     return self + -M
 
   def __pow__(self, n: int) -> Matrix:
@@ -329,6 +328,8 @@ class Matrix:
 
   def determinant(self) -> Number:
     """Returns the determinant of this matrix."""
+    # TODO implement a faster algorithm that doesn't involve creating so many Matrix objects.
+    # This algorithm is an oversimplification.
     if not self.is_numerical():
       raise TypeError("Determinant only defined for numerical matrices")
     if not self.is_square():
