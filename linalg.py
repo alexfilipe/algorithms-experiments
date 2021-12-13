@@ -10,7 +10,7 @@ from typing import Any, Iterable, Union
 Number = Union[int, float, complex]
 NoneType = type(None)
 
-TYPES: list[type] = [NoneType, str, int, float, complex]
+TYPES: list[type] = [NoneType, int, float, complex, str]
 NUMERICAL_TYPES: list[type] = [int, float, complex]  # types in containment order
 ZEROS: dict[type, Number] = {int: 0, float: 0., complex: 0j}
 ONES: dict[type, Number] = {int: 1, float: 1., complex: 1+0j}
