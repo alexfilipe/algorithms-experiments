@@ -9,7 +9,7 @@ from typing import Any, Type
 NUMERICAL_TYPES = {int, float, complex}
 ZEROS = {int: 0, float: 0., complex: 0j}
 ONES = {int: 1, float: 1., complex: 1+0j}
-
+MULTIPLICATION_ALGORITHM = 'naive'  # 'naive' or 'strassen'
 
 def dot_product(a: list[Number], b: list[Number]) -> Number:
   """Returns the dot product of the two vectors."""
@@ -197,6 +197,20 @@ class Matrix:
         self.array[i][j] += m.array[i][j]
     return self
 
+  def strassen_mul(self, m: Matrix) -> Matrix:
+    """Multiplication using Strassen's fast matrix multiplication algorithm."""
+    raise NotImplementedError("Strassen multiplication not implemented")
+
+  def naive_mul(self, m: Matrix) -> Matrix:
+    """Naive matrix multiplication algorithm."""
+    r = [[0 for _ in range(m.dim[1])] for _ in range(self.dim[0])]
+    for i in range(self.dim[0]):
+      for j in range(m.dim[1]):
+        row = self.array[i]
+        col = [m.array[k][j] for k in range(m.dim[0])]
+        r[i][j] = dot_product(row, col)
+    return Matrix(r)
+
   def __mul__(self, m: Matrix | int | float | complex) -> Matrix:
     """Matrix multiplication (brute force)."""
     if type(m) in NUMERICAL_TYPES:
@@ -208,13 +222,13 @@ class Matrix:
     if self.dim[1] != m.dim[0]:
       raise ValueError("Number of columns in the left matrix must match number of rows in right "
                        "matrix")
-    r = [[0 for _ in range(m.dim[1])] for _ in range(self.dim[0])]
-    for i in range(self.dim[0]):
-      for j in range(m.dim[1]):
-        row = self.array[i]
-        col = [m.array[k][j] for k in range(m.dim[0])]
-        r[i][j] = dot_product(row, col)
-    return Matrix(r)
+
+    if MULTIPLICATION_ALGORITHM == "strassen":
+      return self.strassen_mult(m)
+    elif MULTIPLICATION_ALGORITHM == "naive":
+      return self.naive_mul(m)
+
+    raise NotImplementedError(f"`{MULTIPLICATION_ALGORITHM}` algorithm not implemented")
 
   def __rmul__(self, a: int | float | complex) -> Matrix:
     """Scalar multiplication."""
