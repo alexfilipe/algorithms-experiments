@@ -47,7 +47,7 @@ class Matrix:
   """
 
   def __init__(self, array: list[list[Any] | Iterable[Any]], fillna: Any | None = None):
-    self.array: list[list[Any]] = []
+    self.array: list[list[Any]] = [[]]
     self.dtype: type = NoneType
     self.dim: tuple[int, int] = (0, 0)
 
