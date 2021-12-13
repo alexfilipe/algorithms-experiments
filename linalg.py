@@ -94,14 +94,14 @@ class Matrix:
           raise ValueError("All elements must have the same type")
 
   def __str__(self):
-    return self.__repr__()
+    rows, cols = self.dim
+    colspans = [max(len(str(self.array[i][j])) for i in range(rows)) for j in range(cols)]
+    return "\n".join(" ".join(f"{str(c) : >{colspans[i]}}" for i, c in enumerate(r))
+                     for r in self.array)
 
   def __repr__(self):
-    # TODO better repr with unequal widths
-    colspan = max(max(len(str(c)) for c in r) for r in self.array)
-    r = "\n".join(" ".join(f"{str(c):{colspan}}" for c in r) for r in self.array)
-    r += f"\n<linalg.Matrix dim={self.dim} type={self.dtype} size={self.size()}>"
-    return r
+    return (f"{self.__str__()}\n"
+            f"<linalg.Matrix dim={self.dim} type={self.dtype} size={self.size()}>")
 
   def size(self) -> int:
     """Partially deep getsizeof of the contents of this matrix."""
