@@ -47,13 +47,11 @@ class Matrix:
   """
 
   def __init__(self, array: list[list[Any] | Iterable[Any]], fillna: Any | None = None):
-    self.array: list[list[Any]]
-    self.dtype: type
-    self.dim: tuple[int, int]
+    self.array: list[list[Any]] = []
+    self.dtype: type = NoneType
+    self.dim: tuple[int, int] = (0, 0)
 
-    if not array or all(not row for row in array):
-      self.array = []
-    else:
+    if array and any(row for row in array):
       self.array = [[] for _ in range(len(array))]
 
     for i, row in enumerate(array):
@@ -67,9 +65,8 @@ class Matrix:
 
     rows = len(self.array)
     cols = max(len(row) for row in self.array) if rows else 0
-    self.dim = rows, cols
+    self.dim = (rows, cols)
 
-    self.dtype = NoneType
     if rows != 0 and cols != 0:
       # TODO: check for first not-None (most compatible -- Number) type instead
       self.dtype = type(self.array[0][0])
