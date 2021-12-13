@@ -6,6 +6,7 @@ from functools import reduce
 from typing import Any, Iterable, Union
 
 Number = Union[int, float, complex]
+NoneType = type(None)
 
 NUMERICAL_TYPES: set[type] = {int, float, complex}
 ZEROS: dict[type, Number] = {int: 0, float: 0., complex: 0j}
@@ -17,6 +18,12 @@ def dot_product(a: list[Number], b: list[Number]) -> Number:
   if len(a) != len(b):
     raise ValueError("Vectors must have same dimension")
   return sum(x * y for x, y in zip(a, b))
+
+def type_compatible(value: Any, dtype: type) -> bool:
+  """Returns True if the variables are type compatible."""
+  if any(isinstance(value, t) for t in NUMERICAL_TYPES) and dtype in NUMERICAL_TYPES:
+    return True
+  return isinstance(value, dtype)
 
 
 class Matrix:
@@ -53,30 +60,30 @@ class Matrix:
     cols = max(len(row) for row in self.array) if rows else 0
     self.dim = rows, cols
 
-    self.dtype = type(None)
+    self.dtype = NoneType
     if rows != 0 and cols != 0:
-      # TODO: check for first not-None type instead
+      # TODO: check for first not-None (most compatible -- Number) type instead
       self.dtype = type(self.array[0][0])
 
-    if fillna is not None and not isinstance(fillna, self.dtype):
+    if fillna is not None and not type_compatible(fillna, self.dtype):
       # TODO typecast numerical types to the most common type
-      raise TypeError(f"fillna type ({type(fillna)}) must match matrix type ({self.dtype})")
+      raise TypeError(f"fillna type ({type(fillna)}) must be compatible matrix type ({self.dtype})")
 
-    if fillna is None and self.dtype is not None and self.dtype in ZEROS:
+    if fillna is None and self.dtype is not NoneType and self.dtype in ZEROS:
       fillna = ZEROS[self.dtype]
 
     # Normalize matrix, fill missing entries with default value
     for row in self.array:
       if len(row) != cols:
-        if fillna is None and self.dtype is not None:
+        if fillna is None and self.dtype is not NoneType:
           raise TypeError("fillna must be provided for nonbasic types (int, float, complex, str, "
-                          "None) when there are incomplete rows")
+                          "NoneType) when there are incomplete rows")
         row[:] = row + [fillna] * (cols - len(row))
 
     # Check if matrix is a single type
     for row in self.array:
       for elt in row:
-        if elt is not None and not isinstance(elt, self.dtype):
+        if elt is not None and not type_compatible(elt, self.dtype):
           raise ValueError("All elements must have the same type")
 
   def __str__(self):
@@ -208,8 +215,7 @@ class Matrix:
       raise TypeError("Conjugate transpose is only implemented for numerical matrices")
     if self.dtype in [int, float]:
       return self.transpose()
-    transposed = self.transpose().array
-    return Matrix([[elt.conjugate() for elt in row] for row in transposed])
+    return Matrix([[elt.conjugate() for elt in row] for row in self.transpose().array])
 
   @property
   def H(self) -> Matrix:
