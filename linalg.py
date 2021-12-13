@@ -295,6 +295,8 @@ class Matrix:
 
   def __sub__(self, M: Matrix | int) -> Matrix:
     """Matrix subtraction."""
+    if M == 0:
+      M = Matrix.zero(self.dim)
     if M == 1:
       M = Matrix.identity(self.dim)
     return self + -M
