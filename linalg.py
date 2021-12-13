@@ -3,13 +3,14 @@
 from __future__ import annotations
 import operator as op
 from functools import reduce
-from numbers import Number
-from typing import Any, Type
+from typing import Any, Iterable, Union
 
-NUMERICAL_TYPES = {int, float, complex}
-ZEROS = {int: 0, float: 0., complex: 0j}
-ONES = {int: 1, float: 1., complex: 1+0j}
-MULTIPLICATION_ALGORITHM = 'naive'  # 'naive' or 'strassen'
+Number = Union[int, float, complex]
+
+NUMERICAL_TYPES: set[type] = {int, float, complex}
+ZEROS: dict[type, Number] = {int: 0, float: 0., complex: 0j}
+ONES: dict[type, Number] = {int: 1, float: 1., complex: 1+0j}
+MULTIPLICATION_ALGORITHM: str = 'naive'  # 'naive' or 'strassen'
 
 def dot_product(a: list[Number], b: list[Number]) -> Number:
   """Returns the dot product of the two vectors."""
@@ -30,22 +31,30 @@ class Matrix:
     fillna: Value to fill for missing elements at the end of each row. Must match matrix type.
   """
 
-  def __init__(self, array: list[list], fillna: Any | None = None):
-    self.array = array
+  def __init__(self, array: list[list[Any] | Iterable[Any]], fillna: Any | None = None):
+    self.array: list[list[Any]]
+    self.dtype: type
+
     if not array or all(not row for row in array):
       self.array = []
+    else:
+      self.array = [[] for _ in range(len(array))]
 
-    for row in self.array:
+    for i, row in enumerate(array):
       if not isinstance(row, list):
-        raise TypeError("All rows must be lists")
+        try:
+          self.array[i] = list(row)
+        except TypeError:
+          raise TypeError("All rows must be lists or iterables")
+      else:
+        self.array[i] = row
 
     rows = len(self.array)
     cols = max(len(row) for row in self.array) if rows else 0
     self.dim = rows, cols
 
-    if rows == 0 or cols == 0:
-      self.dtype = None
-    else:
+    self.dtype = type(None)
+    if rows != 0 and cols != 0:
       # TODO: check for first not-None type instead
       self.dtype = type(self.array[0][0])
 
@@ -99,7 +108,7 @@ class Matrix:
           return False
     return True
 
-  def __getitem__(self, index: int | tuple[int, int]) -> Any:
+  def __getitem__(self, index: int | tuple[int, int]) -> Any | list[Any] | list[list[Any]]:
     if isinstance(index, slice):
       raise NotImplementedError("Matrix slicing not implemented")
 
@@ -115,7 +124,8 @@ class Matrix:
 
     raise IndexError("Index must be an integer or 2-tuple of integers")
 
-  def __setitem__(self, index: int | tuple[int, int], value: Any) -> Any:
+  def __setitem__(self, index: int | tuple[int, int],
+                  value: Any | list[Any] | list[list[Any]]) -> Any | list[Any] | list[list[Any]]:
     if isinstance(index, slice):
       raise NotImplementedError("Slice assignment not implemented")
 
@@ -146,7 +156,7 @@ class Matrix:
     return Matrix([[self[i,j] for j in range(cols)] for i in range(rows)])
 
   @classmethod
-  def identity(cls, dim: int | tuple[int, int] = 0, dtype: Type = int) -> Matrix:
+  def identity(cls, dim: int | tuple[int, int] = 0, dtype: type = int) -> Matrix:
     """Returns the identity matrix of a given dimension and type.
 
     An identity matrix is a square matrix containing 1s along its diagonal and 0s elsewhere. For
@@ -159,12 +169,12 @@ class Matrix:
     return cls([[one if i == j else zero for j in range(dim)] for i in range(dim)])
 
   @classmethod
-  def id(cls, dim: int | tuple[int, int] = 0, dtype: Type = int) -> Matrix:
+  def id(cls, dim: int | tuple[int, int] = 0, dtype: type = int) -> Matrix:
     """Alias of Matrix.identity."""
     return cls.identity(dim, dtype)
 
   @classmethod
-  def zero(cls, dim: int | tuple[int, int] = 0, dtype: Type = int) -> Matrix:
+  def zero(cls, dim: int | tuple[int, int] = 0, dtype: type = int) -> Matrix:
     """Returns the zero matrix of a given dimension and type.
 
     A zero matrix is a matrix containing only zeros.
@@ -197,7 +207,7 @@ class Matrix:
     if not self.is_numerical():
       raise TypeError("Conjugate transpose is only implemented for numerical matrices")
     if self.dtype in [int, float]:
-      return self.copy()
+      return self.transpose()
     transposed = self.transpose().array
     return Matrix([[elt.conjugate() for elt in row] for row in transposed])
 
@@ -232,7 +242,7 @@ class Matrix:
 
   def naive_mul(self, m: Matrix) -> Matrix:
     """Naive matrix multiplication algorithm."""
-    r = [[0 for _ in range(m.dim[1])] for _ in range(self.dim[0])]
+    r: list[list[Number]] = [[0 for _ in range(m.dim[1])] for _ in range(self.dim[0])]
     for i in range(self.dim[0]):
       for j in range(m.dim[1]):
         row = self[i]
@@ -240,7 +250,7 @@ class Matrix:
         r[i][j] = dot_product(row, col)
     return Matrix(r)
 
-  def __mul__(self, m: Matrix | int | float | complex) -> Matrix:
+  def __mul__(self, m: Matrix | Number) -> Matrix:
     """Matrix multiplication."""
     if type(m) in NUMERICAL_TYPES:
       return self.__rmul__(m)
@@ -253,13 +263,13 @@ class Matrix:
                        "matrix")
 
     if MULTIPLICATION_ALGORITHM == "strassen":
-      return self.strassen_mult(m)
+      return self.strassen_mul(m)
     elif MULTIPLICATION_ALGORITHM == "naive":
       return self.naive_mul(m)
 
     raise NotImplementedError(f"`{MULTIPLICATION_ALGORITHM}` algorithm not implemented")
 
-  def __rmul__(self, a: int | float | complex) -> Matrix:
+  def __rmul__(self, a: Number) -> Matrix:
     """Scalar multiplication."""
     if a == 1:
       return self.copy()
@@ -302,7 +312,7 @@ class Matrix:
       raise IndexError("Position out of range")
     return Matrix([[self[r,c] for c in range(cols) if c != j] for r in range(rows) if r != i])
 
-  def determinant(self):
+  def determinant(self) -> Number:
     """Returns the determinant of this matrix."""
     if not self.is_numerical():
       raise TypeError("Determinant only defined for numerical matrices")
@@ -311,7 +321,7 @@ class Matrix:
 
     dim = self.dim[0]
     if dim == 0:
-      return None
+      return 0
     if dim == 1:
       return self[0,0]
     if dim == 2:
@@ -325,7 +335,7 @@ class Matrix:
       d += r
     return d
 
-  def det(self):
+  def det(self) -> Number:
     """Returns the determinant of this matrix. Alias for Matrix.determinant"""
     return self.determinant()
 
@@ -340,7 +350,7 @@ class Matrix:
       raise ArithmeticError("Matrix not invertible")
     raise NotImplementedError("Matrix inversion not implemented")
 
-  def rank(self):
+  def rank(self) -> int:
     """Returns the rank of this matrix."""
     raise NotImplementedError("Rank not implemented")
 
