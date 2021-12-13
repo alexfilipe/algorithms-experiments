@@ -293,6 +293,26 @@ class Matrix:
       raise TypeError(f"Left operand (type={type(a)}) must be a matrix or scalar")
     return Matrix([[a * elt for elt in row] for row in self.array])
 
+  def __div(self, a: Number, floor: bool = False) -> Matrix:
+    """Scalar division implemented for both floor and floating point division."""
+    if not is_numerical(a):
+      raise ValueError("Division only allowed by scalars")
+    if a == 0:
+      raise ZeroDivisionError("Division by zero is undefined")
+    if a == 1:
+      return self.copy()
+    if floor:
+      raise NotImplementedError("Floor division not implemented")
+    return (1 / a) * self
+
+  def __truediv__(self, a: Number) -> Matrix:
+    """Scalar division."""
+    return self.__div(a)
+
+  def __floordiv__(self, a: Number) -> Matrix:
+    """Scalar floor division."""
+    return self.__div(a, floor=True)
+
   def __neg__(self) -> Matrix:
     """Negative of this matrix."""
     return -1 * self

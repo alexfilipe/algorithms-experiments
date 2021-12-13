@@ -6,7 +6,7 @@ TODO tests:
 - Test dot product
 - Test initialization (including iterable support)
 - Test addition between literals
-- Test multiplication, addition, subtraction, negative
+- Test multiplication, addition, subtraction, negative, division
 - Test exponentiation
 - Test inverses (upcoming)
 - Test assignment (slices, rows, type cast, type compatibility)
