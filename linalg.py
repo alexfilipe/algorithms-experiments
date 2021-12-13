@@ -1,6 +1,7 @@
 """Implementation of efficient and inefficient linear algebra algorithms"""
 
 from __future__ import annotations
+import sys
 import itertools
 import operator
 from functools import reduce
@@ -96,9 +97,15 @@ class Matrix:
     return self.__repr__()
 
   def __repr__(self):
-    r = "\n".join(" ".join(str(c) for c in r) for r in self.array)
-    r += f"\n<linalg.Matrix dim={self.dim} type={self.dtype}>"
+    # TODO better repr with unequal widths
+    colspan = max(max(len(str(c)) for c in r) for r in self.array)
+    r = "\n".join(" ".join(f"{str(c):{colspan}}" for c in r) for r in self.array)
+    r += f"\n<linalg.Matrix dim={self.dim} type={self.dtype} size={self.size()}>"
     return r
+
+  def size(self) -> int:
+    """Partially deep getsizeof of the contents of this matrix."""
+    return sum(sys.getsizeof(row) for row in self.array) if self.dim[0] > 0 else 0
 
   def __eq__(self, M: Matrix | int) -> bool:
     """Matrix equality.

@@ -4,11 +4,13 @@
 TODO tests:
 
 - Test dot product
-- Test initialization
+- Test initialization (including iterable support)
 - Test addition between literals
 - Test multiplication, addition, subtraction, negative
-- Test assignment (slices, rows, type cast)
-- Test retrieval (slices, rows, type cast)
+- Test exponentiation
+- Test inverses (upcoming)
+- Test assignment (slices, rows, type cast, type compatibility)
+- Test retrieval (slices, rows, type cast, type compatibility)
 - Test equality
 - Test output
 - Test handling of incomplete values
