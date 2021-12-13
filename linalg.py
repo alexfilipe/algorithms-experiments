@@ -111,15 +111,10 @@ class Matrix:
     raise IndexError("Index must be an integer or 2-tuple of integers")
 
   def __setitem__(self, index: int | tuple[int, int], value: Any) -> Any:
-    if isinstance(index, int):
-      if not isinstance(value, list):
-        raise ValueError(f"Must set row to list type, not {type(value)}")
-      if len(value) != self.dim[1]:
-        raise ValueError(f"Must set row to same dimension as matrix (expected {self.dim[1]}, got "
-                         f"{len(value)})")
-      self.array[index][:] = value
+    if isinstance(index, slice):
+      raise NotImplementedError("Slice assignment not implemented")
 
-    elif isinstance(index, tuple):
+    if isinstance(index, tuple):
       if any(isinstance(i, slice) for i in index):
         raise NotImplementedError("Slice assignment not implemented")
       if len(index) == 2:
@@ -129,8 +124,13 @@ class Matrix:
         self.array[i][j] = value
         return self.array[i][j]
 
-    elif isinstance(index, slice):
-      raise NotImplementedError("Slice assignment not implemented")
+    if isinstance(index, int):
+      if not isinstance(value, list):
+        raise ValueError(f"Must set row to list type, not {type(value)}")
+      if len(value) != self.dim[1]:
+        raise ValueError(f"Must set row to same dimension as matrix (expected {self.dim[1]}, got "
+                         f"{len(value)})")
+      self.array[index][:] = value
 
     raise IndexError("Index must be an integer or 2-tuple of integers")
 
