@@ -212,7 +212,7 @@ class Matrix:
     return Matrix(r)
 
   def __mul__(self, m: Matrix | int | float | complex) -> Matrix:
-    """Matrix multiplication (brute force)."""
+    """Matrix multiplication."""
     if type(m) in NUMERICAL_TYPES:
       return self.__rmul__(m)
     if not isinstance(m, Matrix):
