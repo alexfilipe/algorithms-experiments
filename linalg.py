@@ -90,17 +90,25 @@ class Matrix:
     rows, cols = self.dim
     for i in range(rows):
       for j in range(cols):
-        if self.array[i][j] != m.array[i][j]:
+        if self[i,j] != m[i,j]:
           return False
     return True
 
   def __getitem__(self, index: int | tuple[int, int]) -> Any:
+    if isinstance(index, slice):
+      raise NotImplementedError("Matrix slicing not implemented")
+
+    if isinstance(index, tuple):
+      if any(isinstance(i, slice) for i in index):
+        raise NotImplementedError("Matrix slicing not implemented")
+      if len(index) == 2:
+        i, j = index
+        return self.array[i][j]
+
     if isinstance(index, int):
       return self.array[index]
-    elif isinstance(index, tuple) and len(index) == 2:
-      i, j = index
-      return self.array[i][j]
-    raise IndexError("Index must be an integer or tuple of integers")
+
+    raise IndexError("Index must be an integer or 2-tuple of integers")
 
   def __setitem__(self, index: int | tuple[int, int], value: Any) -> Any:
     if isinstance(index, int):
@@ -110,19 +118,26 @@ class Matrix:
         raise ValueError(f"Must set row to same dimension as matrix (expected {self.dim[1]}, got "
                          f"{len(value)})")
       self.array[index][:] = value
-    elif isinstance(index, tuple) and len(index) == 2:
-      if value is not None and not isinstance(value, self.dtype):
-        raise ValueError(f"Cannot set value of type {type(value)} to matrix of type {self.dtype}")
-      i, j = index
-      self.array[i][j] = value
-      return self.array[i][j]
-    raise IndexError("Index must be an integer or tuple of integers")
+
+    elif isinstance(index, tuple):
+      if any(isinstance(i, slice) for i in index):
+        raise NotImplementedError("Slice assignment not implemented")
+      if len(index) == 2:
+        if value is not None and not isinstance(value, self.dtype):
+          raise ValueError(f"Cannot set value of type {type(value)} to matrix of type {self.dtype}")
+        i, j = index
+        self.array[i][j] = value
+        return self.array[i][j]
+
+    elif isinstance(index, slice):
+      raise NotImplementedError("Slice assignment not implemented")
+
+    raise IndexError("Index must be an integer or 2-tuple of integers")
 
   def copy(self) -> Matrix:
     """Returns a (shallow) copy of this matrix."""
     rows, cols = self.dim
-    return Matrix([[self.array[i][j] for j in range(cols)]
-                   for i in range(rows)])
+    return Matrix([[self[i,j] for j in range(cols)] for i in range(rows)])
 
   @classmethod
   def identity(cls, dim: int | tuple[int, int] = 0, dtype: Type = int) -> Matrix:
@@ -158,7 +173,7 @@ class Matrix:
   def transpose(self) -> Matrix:
     """Returns the transpose of this matrix."""
     rows, cols = self.dim
-    return Matrix([[self.array[i][j] for i in range(rows)] for j in range(cols)])
+    return Matrix([[self[i,j] for i in range(rows)] for j in range(cols)])
 
   @property
   def T(self) -> Matrix:
@@ -194,7 +209,7 @@ class Matrix:
     rows, cols = self.dim
     for i in range(rows):
       for j in range(cols):
-        self.array[i][j] += m.array[i][j]
+        self[i,j] += m[i,j]
     return self
 
   def strassen_mul(self, m: Matrix) -> Matrix:
@@ -206,8 +221,8 @@ class Matrix:
     r = [[0 for _ in range(m.dim[1])] for _ in range(self.dim[0])]
     for i in range(self.dim[0]):
       for j in range(m.dim[1]):
-        row = self.array[i]
-        col = [m.array[k][j] for k in range(m.dim[0])]
+        row = self[i]
+        col = [m[k,j] for k in range(m.dim[0])]
         r[i][j] = dot_product(row, col)
     return Matrix(r)
 
@@ -262,7 +277,7 @@ class Matrix:
 
   def minor(self, i: int, j: int) -> Matrix:
     """Returns the minor of this matrix at position i,j (matrix obtained by removing the ith row and
-    jth column of this matrix).
+    jth column).
 
     Args:
       i: index of the row to be removed
@@ -271,8 +286,7 @@ class Matrix:
     rows, cols = self.dim
     if i >= rows or j >= cols:
       raise IndexError("Position out of range")
-    return Matrix([[self.array[r][c] for c in range(cols) if c != j]
-                   for r in range(rows) if r != i])
+    return Matrix([[self[r,c] for c in range(cols) if c != j] for r in range(rows) if r != i])
 
   def determinant(self):
     """Returns the determinant of this matrix."""
