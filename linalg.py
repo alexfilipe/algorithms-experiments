@@ -1,7 +1,8 @@
 """Implementation of efficient and inefficient linear algebra algorithms"""
 
 from __future__ import annotations
-import operator as op
+import itertools
+import operator
 from functools import reduce
 from typing import Any, Iterable, Union
 
@@ -13,15 +14,22 @@ ZEROS: dict[type, Number] = {int: 0, float: 0., complex: 0j}
 ONES: dict[type, Number] = {int: 1, float: 1., complex: 1+0j}
 MULTIPLICATION_ALGORITHM: str = 'naive'  # 'naive' or 'strassen'
 
+
 def dot_product(a: list[Number], b: list[Number]) -> Number:
   """Returns the dot product of the two vectors."""
   if len(a) != len(b):
     raise ValueError("Vectors must have same dimension")
   return sum(x * y for x, y in zip(a, b))
 
+
+def is_numerical(value: Any) -> bool:
+  """Returns True if the value is numerical."""
+  return any(isinstance(value, t) for t in NUMERICAL_TYPES)
+
+
 def type_compatible(value: Any, dtype: type) -> bool:
   """Returns True if the variables are type compatible."""
-  if any(isinstance(value, t) for t in NUMERICAL_TYPES) and dtype in NUMERICAL_TYPES:
+  if is_numerical(value) and dtype in NUMERICAL_TYPES:
     return True
   return isinstance(value, dtype)
 
@@ -41,6 +49,7 @@ class Matrix:
   def __init__(self, array: list[list[Any] | Iterable[Any]], fillna: Any | None = None):
     self.array: list[list[Any]]
     self.dtype: type
+    self.dim: tuple[int, int]
 
     if not array or all(not row for row in array):
       self.array = []
@@ -94,24 +103,24 @@ class Matrix:
     r += f"\n<linalg.Matrix dim={self.dim} type={self.dtype}>"
     return r
 
-  def __eq__(self, m: Matrix | int) -> bool:
+  def __eq__(self, M: Matrix | int) -> bool:
     """Matrix equality.
 
     Equality is supported between matrices of same dimension, and the integer literals `0` and `1`
-    (representing, respectively, the zero and identity matrices of same dimension).
+    (representing, respectively, the zero and identity matrices Mf same dimension).
     """
-    if m == 0:
+    if M == 0:
       m = Matrix.zero(self.dim)
-    if m == 1 and self.is_square():
-      m = Matrix.identity(self.dim)
-    if not isinstance(m, Matrix):
+    if M == 1 and self.is_square():
+      M = Matrix.identity(self.dim)
+    if not isinstance(M, Matrix):
       raise TypeError("Equality only implemented between matrices")
-    if self.dim != m.dim:
+    if self.dim != M.dim:
       return False
     rows, cols = self.dim
     for i in range(rows):
       for j in range(cols):
-        if self[i,j] != m[i,j]:
+        if self[i,j] != M[i,j]:
           return False
     return True
 
@@ -141,7 +150,7 @@ class Matrix:
         raise NotImplementedError("Slice assignment not implemented")
       if len(index) == 2:
         # TODO typecast numerical types to most common type
-        if value is not None and not isinstance(value, self.dtype):
+        if value is not None and not type_compatible(value, self.dtype):
           raise ValueError(f"Cannot set value of type {type(value)} to matrix of type {self.dtype}")
         i, j = index
         self.array[i][j] = value
@@ -222,56 +231,56 @@ class Matrix:
     """Conjugate transpose of this matrix."""
     return self.conj_transpose()
 
-  def __add__(self, m: Matrix | int) -> Matrix:
+  def __add__(self, M: Matrix | int) -> Matrix:
     """Matrix addition. Supports the integer literals `0` and `1`, representing the zero and
     identity matrices of same dimension, respectively.
     """
-    if m == 0:
+    if M == 0:
       return self.copy()
-    if m == 1 and self.is_square():
+    if M == 1 and self.is_square():
       m = Matrix.identity(self.dim)
-    if not isinstance(m, Matrix):
+    if not isinstance(M, Matrix):
       raise TypeError("Addition only supported between matrices")
-    if not self.is_numerical() or not m.is_numerical():
+    if not self.is_numerical() or not M.is_numerical():
       raise TypeError("Addition only supported between numerical matrices")
-    if self.dim != m.dim:
+    if self.dim != M.dim:
       raise ValueError("Matrices must have same dimension")
     rows, cols = self.dim
     for i in range(rows):
       for j in range(cols):
-        self[i,j] += m[i,j]
+        self[i,j] += M[i,j]
     return self
 
-  def strassen_mul(self, m: Matrix) -> Matrix:
+  def strassen_mul(self, M: Matrix) -> Matrix:
     """Multiplication using Strassen's fast matrix multiplication algorithm."""
     raise NotImplementedError("Strassen multiplication not implemented")
 
-  def naive_mul(self, m: Matrix) -> Matrix:
+  def naive_mul(self, M: Matrix) -> Matrix:
     """Naive matrix multiplication algorithm."""
-    r: list[list[Number]] = [[0 for _ in range(m.dim[1])] for _ in range(self.dim[0])]
+    r: list[list[Number]] = [[0 for _ in range(M.dim[1])] for _ in range(self.dim[0])]
     for i in range(self.dim[0]):
-      for j in range(m.dim[1]):
+      for j in range(M.dim[1]):
         row = self[i]
-        col = [m[k,j] for k in range(m.dim[0])]
+        col = [M[k,j] for k in range(M.dim[0])]
         r[i][j] = dot_product(row, col)
     return Matrix(r)
 
-  def __mul__(self, m: Matrix | Number) -> Matrix:
+  def __mul__(self, M: Matrix | Number) -> Matrix:
     """Matrix multiplication."""
-    if type(m) in NUMERICAL_TYPES:
-      return self.__rmul__(m)
-    if not isinstance(m, Matrix):
-      raise TypeError(f"Right operand (type={type(m)}) must be a matrix or scalar")
-    if not self.is_numerical() or not m.is_numerical():
+    if is_numerical(M):
+      return self.__rmul__(M)
+    if not isinstance(M, Matrix):
+      raise TypeError(f"Right operand (type={type(M)}) must be a matrix or scalar")
+    if not self.is_numerical() or not M.is_numerical():
       raise TypeError("Matrix multiplication only implemented for numerical matrices")
-    if self.dim[1] != m.dim[0]:
+    if self.dim[1] != M.dim[0]:
       raise ValueError("Number of columns in the left matrix must match number of rows in right "
                        "matrix")
 
     if MULTIPLICATION_ALGORITHM == "strassen":
-      return self.strassen_mul(m)
+      return self.strassen_mul(M)
     elif MULTIPLICATION_ALGORITHM == "naive":
-      return self.naive_mul(m)
+      return self.naive_mul(M)
 
     raise NotImplementedError(f"`{MULTIPLICATION_ALGORITHM}` algorithm not implemented")
 
@@ -279,7 +288,7 @@ class Matrix:
     """Scalar multiplication."""
     if a == 1:
       return self.copy()
-    if all(not isinstance(a, t) for t in NUMERICAL_TYPES):
+    if not is_numerical(a):
       raise TypeError(f"Left operand (type={type(a)}) must be a matrix or scalar")
     return Matrix([[a * elt for elt in row] for row in self.array])
 
@@ -287,9 +296,9 @@ class Matrix:
     """Negative of this matrix."""
     return -1 * self
 
-  def __sub__(self, m: Matrix | int) -> Matrix:
+  def __sub__(self, M: Matrix | int) -> Matrix:
     """Matrix subtraction."""
-    return self + -m
+    return self + -M
 
   def __pow__(self, n: int) -> Matrix:
     """Integer exponentiation."""
@@ -303,7 +312,7 @@ class Matrix:
       return self.inverse()
     if n < -1:
       return (self ** -1) ** -n
-    return reduce(op.mul, (self for _ in range(n)))
+    return reduce(operator.mul, itertools.repeat(self, n))
 
   def minor(self, i: int, j: int) -> Matrix:
     """Returns the minor of this matrix at position i,j (matrix obtained by removing the ith row and
