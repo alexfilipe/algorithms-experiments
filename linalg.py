@@ -251,7 +251,7 @@ class Matrix:
     if M == 0:
       return self.copy()
     if M == 1 and self.is_square():
-      M = Matrix.identity(self.dim)
+      M = Matrix.identity(self.dim, dtype=self.dtype)
     if not isinstance(M, Matrix):
       raise TypeError("Addition only supported between matrices")
     if not self.is_numerical() or not M.is_numerical():
@@ -296,6 +296,8 @@ class Matrix:
 
   def __rmul__(self, a: Number) -> Matrix:
     """Scalar multiplication."""
+    if a == 0:
+      return Matrix.zero(self.dim, dtype=self.dtype)
     if a == 1:
       return self.copy()
     if not is_numerical(a):
@@ -341,7 +343,7 @@ class Matrix:
     if not self.is_square():
       raise ValueError("Exponentiation only defined for square matrices")
     if n == 0:
-      return Matrix.identity(self.dim)
+      return Matrix.identity(self.dim, dtype=self.dtype)
     if n == -1:
       return self.inverse()
     if n < -1:
