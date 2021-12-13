@@ -32,7 +32,7 @@ class Matrix:
 
   def __init__(self, array: list[list], fillna: Any | None = None):
     self.array = array
-    if not array or not any(row for row in array):
+    if not array or all(not row for row in array):
       self.array = []
 
     for row in self.array:
@@ -46,10 +46,11 @@ class Matrix:
     if rows == 0 or cols == 0:
       self.dtype = None
     else:
-      # TODO: check for `first` not-None type instead
+      # TODO: check for first not-None type instead
       self.dtype = type(self.array[0][0])
 
     if fillna is not None and not isinstance(fillna, self.dtype):
+      # TODO typecast numerical types to the most common type
       raise TypeError(f"fillna type ({type(fillna)}) must match matrix type ({self.dtype})")
 
     if fillna is None and self.dtype is not None and self.dtype in ZEROS:
@@ -122,6 +123,7 @@ class Matrix:
       if any(isinstance(i, slice) for i in index):
         raise NotImplementedError("Slice assignment not implemented")
       if len(index) == 2:
+        # TODO typecast numerical types to most common type
         if value is not None and not isinstance(value, self.dtype):
           raise ValueError(f"Cannot set value of type {type(value)} to matrix of type {self.dtype}")
         i, j = index
