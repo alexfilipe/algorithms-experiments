@@ -26,6 +26,8 @@ def dot_product(a: list[Scalar], b: list[Scalar]) -> Scalar:
     raise ValueError("Vectors must have same dimension")
   return sum(x * y for x, y in zip(a, b))
 
+dot = dot_product
+
 
 def is_numerical(value: MatrixType) -> bool:
   """Returns True if the value is numerical."""
@@ -57,8 +59,7 @@ class Matrix:
     fillna: Value to fill for missing elements at the end of each row. Must match matrix type.
   """
 
-  def __init__(self, data: list[Iterable[Iterable[MatrixType]]],
-               dim: tuple[int | int] | None = None,
+  def __init__(self, data: Iterable[Iterable[MatrixType]], dim: tuple[int | int] | None = None,
                fillna: MatrixType | None = None):
     # TODO data can also be `0`` or `1`, and dimension can be explicitly given (add the matrix to the
     # top left corner)
@@ -214,10 +215,7 @@ class Matrix:
     zero = ZEROS.get(dtype, ZEROS[int])
     return cls([[one if i == j else zero for j in range(dim)] for i in range(dim)])
 
-  @classmethod
-  def id(cls, dim: int | tuple[int, int] = 0, dtype: type = int) -> Matrix:
-    """Alias of Matrix.identity."""
-    return cls.identity(dim, dtype)
+  id = identity
 
   @classmethod
   def zero(cls, dim: int | tuple[int, int] = 0, dtype: type = int) -> Matrix:
@@ -381,23 +379,17 @@ class Matrix:
     """
     if not self.is_numerical() or not B.is_numerical():
       raise ValueError("Kronecker product only defined for scalar matrices")
-
     (m, n), (p, q) = self.dim, B.dim
     prod = [[0 for _ in range(q * n)] for _ in range(p * m)]
-
     for i in range(m):
       for j in range(n):
         subprod = self[i,j] * B
-
         for k in range(p):
           for l in range(q):
             prod[k + i*p][l + j*p] = subprod[k, l]
-
     return Matrix(prod)
 
-  def kron(self, B: Matrix) -> Matrix:
-    """Returns the Kronecker product of the two matrices. Alias for Matrix.kronecker_product."""
-    return self.kronecker_prod(B)
+  kron = kronecker_prod
 
   def minor(self, i: int, j: int) -> Matrix:
     """Returns the minor of this matrix at position i,j (matrix obtained by removing the ith row and
@@ -437,9 +429,7 @@ class Matrix:
       d += r
     return d
 
-  def det(self) -> Scalar:
-    """Returns the determinant of this matrix. Alias for Matrix.determinant"""
-    return self.determinant()
+  det = determinant
 
   def inverse(self):
     """Returns the inverse of this matrix."""
@@ -476,7 +466,4 @@ def kronecker_prod(A: Matrix, B: Matrix) -> Matrix:
   """Returns the Kronecker product of the two matrices."""
   return A.kronecker_prod(B)
 
-
-def kron(A: Matrix, B: Matrix) -> Matrix:
-  """Alias for linalg.kronecker_prod."""
-  return kronecker_prod(A, B)
+kron = kronecker_prod
