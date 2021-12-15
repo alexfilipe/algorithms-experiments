@@ -11,7 +11,7 @@ from typing import Iterable, Union
 NoneType = type(None)
 MatrixType = Union[NoneType, int, float, complex, str]
 Scalar = Union[int, float, complex]
-MatrixSlice = Union[MatrixType, list[MatrixType], list[list[MatrixType]]]
+MatrixSlice = Union[int, slice, tuple[Union[int, slice], Union[int, slice]]]
 
 # Types in order of precedence.
 TYPES: list[type] = [NoneType, int, float, complex, str]
@@ -128,6 +128,29 @@ class Matrix:
     """Partially deep getsizeof of the contents of this matrix."""
     return sum(sys.getsizeof(row) for row in self.array) if self.dim[0] > 0 else 0
 
+  @classmethod
+  def from_str(cls, string: str, rowsep: str = '\n', colsep: str = ' ',
+               dtype: type = float) -> Matrix:
+    if dtype not in TYPES:
+      raise TypeError(f"Type {dtype} not allowed for linalg.Matrix")
+    rows = [r for r in string.split(rowsep) if r]
+    data = []
+    for r in rows:
+      typecast = dtype
+      if typecast is int:
+        typecast = lambda v: int(float(v))
+      try:
+        data.append([typecast(c) for c in r.split(colsep) if c])
+      except Exception as exc:
+        raise ValueError(f"Error casting row to type {dtype}: {exc}")
+    return cls(data)
+
+  @classmethod
+  def from_file(cls, filepath: str, rowsep: str = '\n', colsep: str = ' ',
+                dtype: type = float) -> Matrix:
+    with open(filepath, 'r') as f:
+      return cls.from_str('\n'.join(f.readlines()), rowsep, colsep, dtype)
+
   def __eq__(self, M: Matrix | int) -> bool:
     """Matrix equality.
 
@@ -149,14 +172,18 @@ class Matrix:
           return False
     return True
 
-  def __getitem__(self, index: int | slice | tuple[int | slice, int | slice]) -> MatrixSlice:
-
+  def __getitem__(self, index: MatrixSlice) -> MatrixType | list[MatrixType] | Matrix:
+    rows, cols = self.dim
     if isinstance(index, slice):
-      raise NotImplementedError("Matrix slicing not implemented")
+      # Return rows
+      start, stop = index.start, index.stop
+      return Matrix(self.array[start:stop])
 
     if isinstance(index, tuple):
       if any(isinstance(i, slice) for i in index):
+        (rstart, rstop), (cstart, cstop) = index.start, index.stop
         raise NotImplementedError("Matrix slicing not implemented")
+
       if len(index) == 2:
         i, j = index
         return self.array[i][j]
@@ -166,8 +193,9 @@ class Matrix:
 
     raise IndexError("Index must be an integer or 2-tuple of integers")
 
-  def __setitem__(self, index: int | slice | tuple[int | slice, int | slice],
-                  value: MatrixSlice) -> MatrixSlice:
+  def __setitem__(self, index: MatrixSlice,
+                  value: MatrixType | list[MatrixType] | list[list[MatrixType]] | Matrix) \
+      -> MatrixType | list[MatrixType] | Matrix:
 
     if isinstance(index, slice):
       raise NotImplementedError("Slice assignment not implemented")
