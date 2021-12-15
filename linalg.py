@@ -13,8 +13,8 @@ MatrixType = Union[NoneType, int, float, complex, str]
 Scalar = Union[int, float, complex]
 
 # Types in order of precedence.
-TYPES: list[type] = [NoneType, int, float, complex, Scalar, str, MatrixType]
-NUMERICAL_TYPES: list[type] = [int, float, complex, Scalar]
+TYPES: list[type] = [NoneType, int, float, complex, str]
+NUMERICAL_TYPES: list[type] = [int, float, complex]
 ZEROS: dict[type, Scalar] = {int: 0, float: 0., complex: 0j}
 ONES: dict[type, Scalar] = {int: 1, float: 1., complex: 1+0j}
 MULTIPLICATION_ALGORITHM: str = 'naive'  # 'naive' or 'strassen'
@@ -368,9 +368,36 @@ class Matrix:
       return (self ** -1) ** -n
     return reduce(operator.mul, itertools.repeat(self, n))
 
-  def kronecker_prod(self, M: Matrix) -> Matrix:
-    """Returns the Kronecker product of the two matrices."""
-    raise NotImplementedError("Kronecker product not implemented")
+  def kronecker_prod(self, B: Matrix) -> Matrix:
+    """Returns the Kronecker product of the two matrices.
+
+    Given two matrices A (m x n) and B (p x q), the Kronecker product is the block matrix (pn x qn)
+    obtained by the following operation:
+
+    A x B = [[A[0,0]*B,  A[0,1]*B,  ...,  A[0,n]*B],
+             [A[1,0]*B,  A[1,1]*B,  ...,  A[1,n]*B],
+             ...
+             [A[m,0]*B,  A[m,1]*B,  ...,  A[m,n]*B]].
+    """
+    if not self.is_numerical() or not B.is_numerical():
+      raise ValueError("Kronecker product only defined for scalar matrices")
+
+    (m, n), (p, q) = self.dim, B.dim
+    prod = [[0 for _ in range(q * n)] for _ in range(p * m)]
+
+    for i in range(m):
+      for j in range(n):
+        subprod = self[i,j] * B
+
+        for k in range(p):
+          for l in range(q):
+            prod[k + i*p][l + j*p] = subprod[k, l]
+
+    return Matrix(prod)
+
+  def kron(self, B: Matrix) -> Matrix:
+    """Returns the Kronecker product of the two matrices. Alias for Matrix.kronecker_product."""
+    return self.kronecker_prod(B)
 
   def minor(self, i: int, j: int) -> Matrix:
     """Returns the minor of this matrix at position i,j (matrix obtained by removing the ith row and
@@ -388,7 +415,7 @@ class Matrix:
   def determinant(self) -> Scalar:
     """Returns the determinant of this matrix."""
     # TODO implement a faster algorithm that doesn't involve creating so many Matrix objects.
-    # This algorithm is an oversimplification.
+    # This algorithm is an oversimplification and has factorial complexity.
     if not self.is_numerical():
       raise TypeError("Determinant only defined for numerical matrices")
     if not self.is_square():
@@ -443,3 +470,13 @@ def minor(A: Matrix, i: int, j: int) -> Matrix:
 def det(A: Matrix) -> Scalar:
   """Returns the determinant of the given matrix."""
   return A.determinant()
+
+
+def kronecker_prod(A: Matrix, B: Matrix) -> Matrix:
+  """Returns the Kronecker product of the two matrices."""
+  return A.kronecker_prod(B)
+
+
+def kron(A: Matrix, B: Matrix) -> Matrix:
+  """Alias for linalg.kronecker_prod."""
+  return kronecker_prod(A, B)
