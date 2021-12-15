@@ -5,12 +5,14 @@ import sys
 import itertools
 import operator
 from functools import reduce
-from typing import Any, Iterable, Union
+from typing import Iterable, Union
 
-Number = Union[int, float, complex]
+
 NoneType = type(None)
+MatrixType = Union[NoneType, int, float, complex, str]
+Number = Union[int, float, complex]
 
-TYPES: list[type] = [NoneType, int, float, complex, str]
+TYPES: list[type] = [NoneType, int, float, complex, str, MatrixType]
 NUMERICAL_TYPES: list[type] = [int, float, complex]  # types in containment order
 ZEROS: dict[type, Number] = {int: 0, float: 0., complex: 0j}
 ONES: dict[type, Number] = {int: 1, float: 1., complex: 1+0j}
@@ -24,12 +26,12 @@ def dot_product(a: list[Number], b: list[Number]) -> Number:
   return sum(x * y for x, y in zip(a, b))
 
 
-def is_numerical(value: Any) -> bool:
+def is_numerical(value: MatrixType) -> bool:
   """Returns True if the value is numerical."""
   return any(isinstance(value, t) for t in NUMERICAL_TYPES)
 
 
-def type_compatible(value: Any, dtype: type) -> bool:
+def type_compatible(value: MatrixType, dtype: type) -> bool:
   """Returns True if the variables are type compatible."""
   if is_numerical(value) and dtype in NUMERICAL_TYPES:
     return True
@@ -49,19 +51,25 @@ class Matrix:
   zero-like values for basic Python types.
 
   Args:
-    array: A list of lists representing the elements
+    data: An iterable of iterables of a type supported by this matrix.
+    dim: The dimension of the matrix (optional). If the given data
     fillna: Value to fill for missing elements at the end of each row. Must match matrix type.
   """
 
-  def __init__(self, array: list[list[Any] | Iterable[Any]], fillna: Any | None = None):
-    self.array: list[list[Any]] = [[]]
+  def __init__(self, data: list[Iterable[Iterable[MatrixType]]],
+               dim: tuple[int | int] | None = None,
+               fillna: MatrixType | None = None):
+    # TODO data can also be `0`` or `1`, and dimension can be explicitly given (add the matrix to the
+    # top left corner)
+    self.array: list[list[MatrixType]] = [[]]
     self.dtype: type = NoneType
     self.dim: tuple[int, int] = (0, 0)
 
-    if array and any(row for row in array):
-      self.array = [[] for _ in range(len(array))]
+    data = list(data)
+    if data and any(row for row in data):
+      self.array = [[] for _ in range(len(data))]
 
-    for i, row in enumerate(array):
+    for i, row in enumerate(data):
       if not isinstance(row, list):
         try:
           self.array[i] = list(row)
@@ -138,7 +146,9 @@ class Matrix:
           return False
     return True
 
-  def __getitem__(self, index: int | tuple[int, int]) -> Any | list[Any] | list[list[Any]]:
+  def __getitem__(
+    self, index: int | tuple[int, int]) -> MatrixType | list[MatrixType] | list[list[MatrixType]]:
+
     if isinstance(index, slice):
       raise NotImplementedError("Matrix slicing not implemented")
 
@@ -154,8 +164,10 @@ class Matrix:
 
     raise IndexError("Index must be an integer or 2-tuple of integers")
 
-  def __setitem__(self, index: int | tuple[int, int],
-                  value: Any | list[Any] | list[list[Any]]) -> Any | list[Any] | list[list[Any]]:
+  def __setitem__(
+    self, index: int | tuple[int, int], value: MatrixType | list[MatrixType] | list[list[MatrixType]]) \
+    -> MatrixType | list[MatrixType] | list[list[MatrixType]]:
+
     if isinstance(index, slice):
       raise NotImplementedError("Slice assignment not implemented")
 
