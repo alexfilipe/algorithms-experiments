@@ -294,7 +294,7 @@ class Matrix:
 
     if MULTIPLICATION_ALGORITHM == "strassen":
       return self.strassen_mul(M)
-    elif MULTIPLICATION_ALGORITHM == "naive":
+    if MULTIPLICATION_ALGORITHM == "naive":
       return self.naive_mul(M)
 
     raise NotImplementedError(f"`{MULTIPLICATION_ALGORITHM}` algorithm not implemented")
@@ -354,6 +354,10 @@ class Matrix:
     if n < -1:
       return (self ** -1) ** -n
     return reduce(operator.mul, itertools.repeat(self, n))
+
+  def kronecker_prod(self, M: Matrix) -> Matrix:
+    """Returns the Kronecker product of the two matrices."""
+    raise NotImplementedError("Kronecker product not implemented")
 
   def minor(self, i: int, j: int) -> Matrix:
     """Returns the minor of this matrix at position i,j (matrix obtained by removing the ith row and
