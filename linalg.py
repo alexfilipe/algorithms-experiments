@@ -11,6 +11,7 @@ from typing import Iterable, Union
 NoneType = type(None)
 MatrixType = Union[NoneType, int, float, complex, str]
 Scalar = Union[int, float, complex]
+MatrixSlice = Union[MatrixType, list[MatrixType], list[list[MatrixType]]]
 
 # Types in order of precedence.
 TYPES: list[type] = [NoneType, int, float, complex, str]
@@ -148,8 +149,7 @@ class Matrix:
           return False
     return True
 
-  def __getitem__(self, index: int | slice | tuple[int | slice, int | slice]) \
-      -> MatrixType | list[MatrixType] | list[list[MatrixType]]:
+  def __getitem__(self, index: int | slice | tuple[int | slice, int | slice]) -> MatrixSlice:
 
     if isinstance(index, slice):
       raise NotImplementedError("Matrix slicing not implemented")
@@ -166,10 +166,8 @@ class Matrix:
 
     raise IndexError("Index must be an integer or 2-tuple of integers")
 
-  def __setitem__(self,
-                  index: int | slice | tuple[int | slice, int | slice],
-                  value: MatrixType | list[MatrixType] | list[list[MatrixType]]) \
-      -> MatrixType | list[MatrixType] | list[list[MatrixType]]:
+  def __setitem__(self, index: int | slice | tuple[int | slice, int | slice],
+                  value: MatrixSlice) -> MatrixSlice:
 
     if isinstance(index, slice):
       raise NotImplementedError("Slice assignment not implemented")
