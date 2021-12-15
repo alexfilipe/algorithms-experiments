@@ -10,16 +10,17 @@ from typing import Iterable, Union
 
 NoneType = type(None)
 MatrixType = Union[NoneType, int, float, complex, str]
-Number = Union[int, float, complex]
+Scalar = Union[int, float, complex]
 
-TYPES: list[type] = [NoneType, int, float, complex, str, MatrixType]
-NUMERICAL_TYPES: list[type] = [int, float, complex]  # types in containment order
-ZEROS: dict[type, Number] = {int: 0, float: 0., complex: 0j}
-ONES: dict[type, Number] = {int: 1, float: 1., complex: 1+0j}
+# Types in order of precedence.
+TYPES: list[type] = [NoneType, int, float, complex, Scalar, str, MatrixType]
+NUMERICAL_TYPES: list[type] = [int, float, complex, Scalar]
+ZEROS: dict[type, Scalar] = {int: 0, float: 0., complex: 0j}
+ONES: dict[type, Scalar] = {int: 1, float: 1., complex: 1+0j}
 MULTIPLICATION_ALGORITHM: str = 'naive'  # 'naive' or 'strassen'
 
 
-def dot_product(a: list[Number], b: list[Number]) -> Number:
+def dot_product(a: list[Scalar], b: list[Scalar]) -> Scalar:
   """Returns the dot product of the two vectors."""
   if len(a) != len(b):
     raise ValueError("Vectors must have same dimension")
@@ -146,8 +147,8 @@ class Matrix:
           return False
     return True
 
-  def __getitem__(
-    self, index: int | tuple[int, int]) -> MatrixType | list[MatrixType] | list[list[MatrixType]]:
+  def __getitem__(self, index: int | slice | tuple[int | slice, int | slice]) \
+      -> MatrixType | list[MatrixType] | list[list[MatrixType]]:
 
     if isinstance(index, slice):
       raise NotImplementedError("Matrix slicing not implemented")
@@ -164,9 +165,10 @@ class Matrix:
 
     raise IndexError("Index must be an integer or 2-tuple of integers")
 
-  def __setitem__(
-    self, index: int | tuple[int, int], value: MatrixType | list[MatrixType] | list[list[MatrixType]]) \
-    -> MatrixType | list[MatrixType] | list[list[MatrixType]]:
+  def __setitem__(self,
+                  index: int | slice | tuple[int | slice, int | slice],
+                  value: MatrixType | list[MatrixType] | list[list[MatrixType]]) \
+      -> MatrixType | list[MatrixType] | list[list[MatrixType]]:
 
     if isinstance(index, slice):
       raise NotImplementedError("Slice assignment not implemented")
@@ -175,7 +177,6 @@ class Matrix:
       if any(isinstance(i, slice) for i in index):
         raise NotImplementedError("Slice assignment not implemented")
       if len(index) == 2:
-        # TODO typecast numerical types to most common type
         if value is not None and not type_compatible(value, self.dtype):
           raise ValueError(f"Cannot set value of type {type(value)} to matrix of type {self.dtype}")
         # Change main type to accommodate new introduced type
@@ -284,7 +285,7 @@ class Matrix:
   def naive_mul(self, M: Matrix) -> Matrix:
     """Naive matrix multiplication algorithm."""
     zero = ZEROS.get(self.dtype, ZEROS[int])
-    R: list[list[Number]] = [[zero for _ in range(M.dim[1])] for _ in range(self.dim[0])]
+    R: list[list[Scalar]] = [[zero for _ in range(M.dim[1])] for _ in range(self.dim[0])]
     for i in range(self.dim[0]):
       for j in range(M.dim[1]):
         row = self[i]
@@ -292,7 +293,7 @@ class Matrix:
         R[i][j] = dot_product(row, col)
     return Matrix(R)
 
-  def __mul__(self, M: Matrix | Number) -> Matrix:
+  def __mul__(self, M: Matrix | Scalar) -> Matrix:
     """Matrix multiplication."""
     if is_numerical(M):
       return self.__rmul__(M)
@@ -301,7 +302,7 @@ class Matrix:
     if not self.is_numerical() or not M.is_numerical():
       raise TypeError("Matrix multiplication only implemented for numerical matrices")
     if self.dim[1] != M.dim[0]:
-      raise ValueError("Number of columns in the left matrix must match number of rows in right "
+      raise ValueError("Scalar of columns in the left matrix must match number of rows in right "
                        "matrix")
 
     if MULTIPLICATION_ALGORITHM == "strassen":
@@ -311,7 +312,7 @@ class Matrix:
 
     raise NotImplementedError(f"`{MULTIPLICATION_ALGORITHM}` algorithm not implemented")
 
-  def __rmul__(self, a: Number) -> Matrix:
+  def __rmul__(self, a: Scalar) -> Matrix:
     """Scalar multiplication."""
     if a == 0:
       return Matrix.zero(self.dim, dtype=self.dtype)
@@ -321,7 +322,7 @@ class Matrix:
       raise TypeError(f"Left operand (type={type(a)}) must be a matrix or scalar")
     return Matrix([[a * elt for elt in row] for row in self.array])
 
-  def __div(self, a: Number, floor: bool = False) -> Matrix:
+  def __div(self, a: Scalar, floor: bool = False) -> Matrix:
     """Scalar division implemented for both floor and floating point division."""
     if not is_numerical(a):
       raise ValueError("Division only allowed by scalars")
@@ -333,11 +334,11 @@ class Matrix:
       return Matrix([[int(elt // a) for elt in row] for row in self.array])
     return (1 / a) * self
 
-  def __truediv__(self, a: Number) -> Matrix:
+  def __truediv__(self, a: Scalar) -> Matrix:
     """Scalar division."""
     return self.__div(a)
 
-  def __floordiv__(self, a: Number) -> Matrix:
+  def __floordiv__(self, a: Scalar) -> Matrix:
     """Scalar floor division."""
     return self.__div(a, floor=True)
 
@@ -384,7 +385,7 @@ class Matrix:
       raise IndexError("Position out of range")
     return Matrix([[self[r,c] for c in range(cols) if c != j] for r in range(rows) if r != i])
 
-  def determinant(self) -> Number:
+  def determinant(self) -> Scalar:
     """Returns the determinant of this matrix."""
     # TODO implement a faster algorithm that doesn't involve creating so many Matrix objects.
     # This algorithm is an oversimplification.
@@ -409,7 +410,7 @@ class Matrix:
       d += r
     return d
 
-  def det(self) -> Number:
+  def det(self) -> Scalar:
     """Returns the determinant of this matrix. Alias for Matrix.determinant"""
     return self.determinant()
 
@@ -439,6 +440,6 @@ def minor(A: Matrix, i: int, j: int) -> Matrix:
   return A.minor(i, j)
 
 
-def det(A: Matrix) -> Number:
+def det(A: Matrix) -> Scalar:
   """Returns the determinant of the given matrix."""
   return A.determinant()
