@@ -149,7 +149,7 @@ class Matrix:
   def from_file(cls, filepath: str, rowsep: str = '\n', colsep: str = ' ',
                 dtype: type = float) -> Matrix:
     with open(filepath, 'r') as f:
-      return cls.from_str('\n'.join(f.readlines()), rowsep, colsep, dtype)
+      return cls.from_str(rowsep.join(f.readlines()), rowsep, colsep, dtype)
 
   def __eq__(self, M: Matrix | int) -> bool:
     """Matrix equality.
