@@ -88,7 +88,7 @@ class Matrix:
 
     if rows != 0 and cols != 0:
       self.dtype = TYPES[0]
-      # Find maxmimum common type
+      # Find minimum common type
       for row in self.array:
         for elt in row:
           if is_subset(self.dtype, type(elt)):
@@ -311,14 +311,13 @@ class Matrix:
 
   def naive_mul(self, M: Matrix) -> Matrix:
     """Naive matrix multiplication algorithm."""
-    zero = ZEROS.get(self.dtype, ZEROS[int])
-    R: list[list[Scalar]] = [[zero for _ in range(M.dim[1])] for _ in range(self.dim[0])]
+    prod = Matrix.zero((self.dim[0], M.dim[1]), self.dtype)
     for i in range(self.dim[0]):
       for j in range(M.dim[1]):
         row = self[i]
         col = [M[k,j] for k in range(M.dim[0])]
-        R[i][j] = dot_product(row, col)
-    return Matrix(R)
+        prod[i,j] = dot_product(row, col)
+    return prod
 
   def __mul__(self, M: Matrix | Scalar) -> Matrix:
     """Matrix multiplication."""
