@@ -35,7 +35,7 @@ def is_numerical(value: MatrixType) -> bool:
   return any(isinstance(value, t) for t in NUMERICAL_TYPES)
 
 
-def type_compatible(value: MatrixType, dtype: type) -> bool:
+def type_compatible(value: MatrixType, dtype: type[MatrixType]) -> bool:
   """Returns True if the variables are type compatible."""
   if is_numerical(value) and dtype in NUMERICAL_TYPES:
     return True
@@ -50,22 +50,23 @@ def is_subset(dtype1: type, dtype2: type) -> bool:
 class Matrix:
   """Class to represent a matrix, supporting elementary unary and binary operations.
 
-  Matrices are strictly typed. The type is automatically inferred from the first element. This
-  constructor supports incomplete rows and fills them accordingly with the parameter `fillna` or
-  zero-like values for basic Python types.
+  Matrices are strictly typed. The type is automatically inferred from the first element. Matrix
+  types are immutable once they are declared. This constructor supports incomplete rows and fills
+  them accordingly with the parameter `fillna` or zero-like values for basic Python types.
 
   Args:
-    data: An iterable of iterables of a type supported by this matrix.
-    dim: The dimension of the matrix (optional). If the given data
+    data: A (finite) iterable of (finite) iterables of a type supported by this matrix.
+    dim: The dimension of the matrix (optional). The data will be truncated or filled if the
+      dimension is different than the given data.
     fillna: Value to fill for missing elements at the end of each row. Must match matrix type.
   """
 
-  def __init__(self, data: Iterable[Iterable[MatrixType]], dim: tuple[int | int] | None = None,
+  def __init__(self, data: Iterable[Iterable[MatrixType]], dim: tuple[int, int] | None = None,
                fillna: MatrixType | None = None):
     # TODO data can also be `0`` or `1`, and dimension can be explicitly given (add the matrix to the
     # top left corner)
     self.array: list[list[MatrixType]] = [[]]
-    self.dtype: type = NoneType
+    self.dtype: type[MatrixType] = NoneType
     self.dim: tuple[int, int] = (0, 0)
 
     data = list(data)
@@ -94,7 +95,6 @@ class Matrix:
             self.dtype = type(elt)
 
     if fillna is not None and not type_compatible(fillna, self.dtype):
-      # TODO typecast numerical types to the most common type
       raise TypeError(f"fillna type ({type(fillna)}) must be compatible matrix type ({self.dtype})")
 
     if fillna is None and self.dtype is not NoneType and self.dtype in ZEROS:
@@ -130,7 +130,7 @@ class Matrix:
 
   @classmethod
   def from_str(cls, string: str, rowsep: str = '\n', colsep: str = ' ',
-               dtype: type = float) -> Matrix:
+               dtype: type[MatrixType] = float) -> Matrix:
     if dtype not in TYPES:
       raise TypeError(f"Type {dtype} not allowed for linalg.Matrix")
     rows = [r for r in string.split(rowsep) if r]
@@ -147,7 +147,7 @@ class Matrix:
 
   @classmethod
   def from_file(cls, filepath: str, rowsep: str = '\n', colsep: str = ' ',
-                dtype: type = float) -> Matrix:
+                dtype: type[MatrixType] = float) -> Matrix:
     with open(filepath, 'r') as f:
       return cls.from_str(rowsep.join(f.readlines()), rowsep, colsep, dtype)
 
@@ -180,13 +180,12 @@ class Matrix:
       return Matrix(self.array[start:stop])
 
     if isinstance(index, tuple):
+      if len(index) != 2:
+        raise IndexError("Index must be an integer or 2-tuple of integers or slices")
       if any(isinstance(i, slice) for i in index):
-        (rstart, rstop), (cstart, cstop) = index.start, index.stop
         raise NotImplementedError("Matrix slicing not implemented")
-
-      if len(index) == 2:
-        i, j = index
-        return self.array[i][j]
+      i, j = index
+      return self.array[i][j]
 
     if isinstance(index, int):
       return self.array[index]
@@ -223,13 +222,17 @@ class Matrix:
 
     raise IndexError("Index must be an integer or 2-tuple of integers")
 
+  def __len__(self) -> int:
+    """Returns the number of rows."""
+    return self.dim[0]
+
   def copy(self) -> Matrix:
     """Returns a (shallow) copy of this matrix."""
     rows, cols = self.dim
     return Matrix([[self[i,j] for j in range(cols)] for i in range(rows)])
 
   @classmethod
-  def identity(cls, dim: int | tuple[int, int] = 0, dtype: type = int) -> Matrix:
+  def identity(cls, dim: int | tuple[int, int] = 0, dtype: type[Scalar] = int) -> Matrix:
     """Returns the identity matrix of a given dimension and type.
 
     An identity matrix is a square matrix containing 1s along its diagonal and 0s elsewhere. For
@@ -244,7 +247,7 @@ class Matrix:
   id = identity
 
   @classmethod
-  def zero(cls, dim: int | tuple[int, int] = 0, dtype: type = int) -> Matrix:
+  def zero(cls, dim: int | tuple[int, int] = 0, dtype: type[Scalar] = int) -> Matrix:
     """Returns the zero matrix of a given dimension and type.
 
     A zero matrix is a matrix containing only zeros.
