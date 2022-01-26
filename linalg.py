@@ -236,9 +236,11 @@ class Matrix:
     """Returns the identity matrix of a given dimension and type.
 
     An identity matrix is a square matrix containing 1s along its diagonal and 0s elsewhere. For
-    compatibility, this method allows tuples (assumes the first tuple element as the dimension).
+    compatibility, this method allows square tuples.
     """
     if isinstance(dim, tuple):
+      if len(dim) != 2 or dim[0] != dim[1]:
+        raise ValueError("first and second dimensions must be equal")
       dim = dim[0]
     one = ONES.get(dtype, ONES[int])
     zero = ZEROS.get(dtype, ZEROS[int])
