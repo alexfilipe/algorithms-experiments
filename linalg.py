@@ -14,10 +14,10 @@ Scalar = Union[int, float, complex]
 MatrixSlice = Union[int, slice, tuple[Union[int, slice], Union[int, slice]]]
 
 # Types in order of precedence.
-TYPES: list[type] = [NoneType, int, float, complex, str]
-NUMERICAL_TYPES: list[type] = [int, float, complex]
-ZEROS: dict[type, Scalar] = {int: 0, float: 0., complex: 0j}
-ONES: dict[type, Scalar] = {int: 1, float: 1., complex: 1+0j}
+TYPES: list[type[MatrixType]] = [NoneType, int, float, complex, str]
+NUMERICAL_TYPES: list[type[MatrixType]] = [int, float, complex]
+ZEROS: dict[type[MatrixType], Scalar] = {int: 0, float: 0., complex: 0j}
+ONES: dict[type[MatrixType], Scalar] = {int: 1, float: 1., complex: 1+0j}
 MULTIPLICATION_ALGORITHM: str = 'naive'  # 'naive' or 'strassen'
 
 
