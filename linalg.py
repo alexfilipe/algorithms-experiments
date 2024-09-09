@@ -42,8 +42,18 @@ def type_compatible(value: MatrixType, dtype: type[MatrixType]) -> bool:
   return isinstance(value, dtype)
 
 
-def is_subset(dtype1: type, dtype2: type) -> bool:
-  """Returns True if the first numerical type is a strict subset of the second type."""
+def is_subset(dtype1: type, dtype2: type, strict: bool = True) -> bool:
+  """Returns True if the first numerical type is a strict subset of the second type.
+
+  Args:
+    dtype1: First numerical type.
+    dtype2: Second numerical type.
+    strict: If False, also returns True if the types are equal.
+  """
+  if not is_numerical(dtype1) or not is_numerical(dtype2):
+    raise ValueError("Only numerical types are allowed")
+  if not strict and dtype1 == dtype2:
+    return True
   return TYPES.index(dtype1) < TYPES.index(dtype2)
 
 
