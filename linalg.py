@@ -404,7 +404,7 @@ class Matrix:
 
     A x B = [[A[0,0]*B,  A[0,1]*B,  ...,  A[0,n]*B],
              [A[1,0]*B,  A[1,1]*B,  ...,  A[1,n]*B],
-             ...
+             ...,
              [A[m,0]*B,  A[m,1]*B,  ...,  A[m,n]*B]].
     """
     if not self.is_numerical() or not B.is_numerical():
