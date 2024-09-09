@@ -5,13 +5,13 @@ import sys
 import itertools
 import operator
 from functools import reduce
-from typing import Iterable, Union
+from typing import Iterable
 
 
 NoneType = type(None)
-MatrixType = Union[NoneType, int, float, complex, str]
-Scalar = Union[int, float, complex]
-MatrixSlice = Union[int, slice, tuple[Union[int, slice], Union[int, slice]]]
+MatrixType = NoneType | int | float | complex | str
+Scalar = int | float | complex
+MatrixSlice = int | slice | tuple[int | slice, int | slice]
 
 # Types in order of precedence.
 TYPES: list[type[MatrixType]] = [NoneType, int, float, complex, str]
@@ -63,7 +63,7 @@ class Matrix:
 
   def __init__(self, data: Iterable[Iterable[MatrixType]], dim: tuple[int, int] | None = None,
                fillna: MatrixType | None = None):
-    # TODO data can also be `0`` or `1`, and dimension can be explicitly given (add the matrix to the
+    # TODO data can also be `0` or `1`, and dimension can be explicitly given (add the matrix to the
     # top left corner)
     self.array: list[list[MatrixType]] = [[]]
     self.dtype: type[MatrixType] = NoneType
