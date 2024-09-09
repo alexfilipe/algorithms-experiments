@@ -399,7 +399,7 @@ class Matrix:
   def kronecker_prod(self, B: Matrix) -> Matrix:
     """Returns the Kronecker product of the two matrices.
 
-    Given two matrices A (m x n) and B (p x q), the Kronecker product is the block matrix (pn x qn)
+    Given two matrices A (m x n) and B (p x q), the Kronecker product is the block matrix (pm x qn)
     obtained by the following operation:
 
     A x B = [[A[0,0]*B,  A[0,1]*B,  ...,  A[0,n]*B],
