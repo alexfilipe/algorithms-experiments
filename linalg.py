@@ -38,6 +38,7 @@ def is_numerical(value: MatrixType) -> bool:
 def type_compatible(value: MatrixType, dtype: type[MatrixType]) -> bool:
   """Returns True if the variables are type compatible."""
   if is_numerical(value) and dtype in NUMERICAL_TYPES:
+    # TODO: WARNING! Fix this -- 1.5 is not an integer but this will return True
     return True
   return isinstance(value, dtype)
 
@@ -50,8 +51,6 @@ def is_subset(dtype1: type, dtype2: type, strict: bool = True) -> bool:
     dtype2: Second numerical type.
     strict: If False, also returns True if the types are equal.
   """
-  if not is_numerical(dtype1) or not is_numerical(dtype2):
-    raise ValueError("Only numerical types are allowed")
   if not strict and dtype1 == dtype2:
     return True
   return TYPES.index(dtype1) < TYPES.index(dtype2)
@@ -75,31 +74,31 @@ class Matrix:
                fillna: MatrixType | None = None):
     # TODO data can also be `0` or `1`, and dimension can be explicitly given (add the matrix to the
     # top left corner)
-    self.array: list[list[MatrixType]] = [[]]
+    self.__array: list[list[MatrixType]] = [[]]
     self.dtype: type[MatrixType] = NoneType
     self.dim: tuple[int, int] = (0, 0)
 
     data = list(data)
     if data and any(row for row in data):
-      self.array = [[] for _ in range(len(data))]
+      self.__array = [[] for _ in range(len(data))]
 
     for i, row in enumerate(data):
       if not isinstance(row, list):
         try:
-          self.array[i] = list(row)
+          self.__array[i] = list(row)
         except TypeError:
           raise TypeError("All rows must be lists or iterables")
       else:
-        self.array[i] = row
+        self.__array[i] = row
 
-    rows = len(self.array)
-    cols = max(len(row) for row in self.array) if rows else 0
+    rows = len(self.__array)
+    cols = max(len(row) for row in self.__array) if rows else 0
     self.dim = (rows, cols)
 
     if rows != 0 and cols != 0:
       self.dtype = TYPES[0]
       # Find minimum common type
-      for row in self.array:
+      for row in self.__array:
         for elt in row:
           if is_subset(self.dtype, type(elt)):
             self.dtype = type(elt)
@@ -111,7 +110,7 @@ class Matrix:
       fillna = ZEROS[self.dtype]
 
     # Normalize matrix, fill missing entries with default value
-    for row in self.array:
+    for row in self.__array:
       if len(row) != cols:
         if fillna is None and self.dtype is not NoneType:
           raise TypeError("fillna must be provided for nonbasic types (int, float, complex, str, "
@@ -119,16 +118,16 @@ class Matrix:
         row[:] = row + [fillna] * (cols - len(row))
 
     # Check if matrix is a single type
-    for row in self.array:
+    for row in self.__array:
       for elt in row:
         if elt is not None and not type_compatible(elt, self.dtype):
           raise ValueError("All elements must have the same type")
 
   def __str__(self):
     rows, cols = self.dim
-    colspans = [max(len(str(self.array[i][j])) for i in range(rows)) for j in range(cols)]
+    colspans = [max(len(str(self.__array[i][j])) for i in range(rows)) for j in range(cols)]
     return "\n".join(" ".join(f"{str(c) : >{colspans[i]}}" for i, c in enumerate(r))
-                     for r in self.array)
+                     for r in self.__array)
 
   def __repr__(self):
     return (f"{self.__str__()}\n"
@@ -136,7 +135,7 @@ class Matrix:
 
   def size(self) -> int:
     """Partially deep getsizeof of the contents of this matrix."""
-    return sum(sys.getsizeof(row) for row in self.array) if self.dim[0] > 0 else 0
+    return sum(sys.getsizeof(row) for row in self.__array) if self.dim[0] > 0 else 0
 
   @classmethod
   def from_str(cls, string: str, rowsep: str = '\n', colsep: str = ' ',
@@ -187,7 +186,7 @@ class Matrix:
     if isinstance(index, slice):
       # Return rows
       start, stop = index.start, index.stop
-      return Matrix(self.array[start:stop])
+      return Matrix(self.__array[start:stop])
 
     if isinstance(index, tuple):
       if len(index) != 2:
@@ -195,16 +194,18 @@ class Matrix:
       if any(isinstance(i, slice) for i in index):
         raise NotImplementedError("Matrix slicing not implemented")
       i, j = index
-      return self.array[i][j]
+      return self.__array[i][j]
 
     if isinstance(index, int):
-      return self.array[index]
+      return self.__array[index]
 
     raise IndexError("Index must be an integer or 2-tuple of integers")
 
-  def __setitem__(self, index: MatrixSlice,
-                  value: MatrixType | list[MatrixType] | list[list[MatrixType]] | Matrix) \
-      -> MatrixType | list[MatrixType] | Matrix:
+  def __setitem__(
+      self,
+      index: MatrixSlice,
+      value: MatrixType | list[MatrixType] | list[list[MatrixType]] | Matrix,
+  ) -> MatrixType | list[MatrixType] | Matrix:
 
     if isinstance(index, slice):
       raise NotImplementedError("Slice assignment not implemented")
@@ -219,8 +220,8 @@ class Matrix:
         elif is_numerical(value) and is_subset(self.dtype, type(value)):
           self.dtype = type(value)
         i, j = index
-        self.array[i][j] = value
-        return self.array[i][j]
+        self.__array[i][j] = value
+        return self.__array[i][j]
 
     if isinstance(index, int):
       if not isinstance(value, list):
@@ -228,7 +229,7 @@ class Matrix:
       if len(value) != self.dim[1]:
         raise ValueError(f"Must set row to same dimension as matrix (expected {self.dim[1]}, got "
                          f"{len(value)})")
-      self.array[index][:] = value
+      self.__array[index][:] = value
 
     raise IndexError("Index must be an integer or 2-tuple of integers")
 
@@ -358,7 +359,7 @@ class Matrix:
       return self.copy()
     if not is_numerical(a):
       raise TypeError(f"Left operand (type={type(a)}) must be a matrix or scalar")
-    return Matrix([[a * elt for elt in row] for row in self.array])
+    return Matrix([[a * elt for elt in row] for row in self.__array])
 
   def __div(self, a: Scalar, floor: bool = False) -> Matrix:
     """Scalar division implemented for both floor and floating point division."""
@@ -369,7 +370,7 @@ class Matrix:
     if a == 1:
       return self.copy()
     if floor:
-      return Matrix([[int(elt // a) for elt in row] for row in self.array])
+      return Matrix([[int(elt // a) for elt in row] for row in self.__array])
     return (1 / a) * self
 
   def __truediv__(self, a: Scalar) -> Matrix:
@@ -426,7 +427,7 @@ class Matrix:
         subprod = self[i,j] * B
         for k in range(p):
           for l in range(q):
-            prod[k + i*p][l + j*p] = subprod[k, l]
+            prod[k + i*p][l + j*q] = subprod[k,l]
     return Matrix(prod)
 
   kron = kronecker_prod
@@ -439,6 +440,9 @@ class Matrix:
       i: index of the row to be removed
       j: index of the column to be removed
     """
+    # TODO: idea, create MatrixMinor object, which is a subclass of the Matrix class, and only
+    # implements the __getitem__ method. This way, we can avoid creating a new matrix object every
+    # time we need a minor.
     rows, cols = self.dim
     if i >= rows or j >= cols:
       raise IndexError("Position out of range")
@@ -485,6 +489,9 @@ class Matrix:
   def rank(self) -> int:
     """Returns the rank of this matrix."""
     raise NotImplementedError("Rank not implemented")
+
+
+MatrixLike = Matrix | Iterable[MatrixType] | Iterable[Iterable[MatrixType]]
 
 
 def dim(A: Matrix) -> tuple[int, int]:
