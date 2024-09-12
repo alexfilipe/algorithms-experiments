@@ -160,16 +160,34 @@ class Matrix:
     with open(filepath, 'r') as f:
       return cls.from_str(rowsep.join(f.readlines()), rowsep, colsep, dtype)
 
+  def __eq__zero(self) -> bool:
+    """Equality between matrix and zero matrix."""
+    if not self.is_numerical():
+      raise TypeError("Zero matrix only defined for numerical matrices")
+    for row in self.__array:
+      for elt in row:
+        if elt != 0:
+          return False
+    return True
+
+  def __eq__int(self, M: int) -> bool:
+    """Equality between matrix and integer representing matrix."""
+    if M == 0:
+      return self.__eq__zero()
+    if M == 1:
+      if not self.is_square():
+        raise ValueError("Identity matrix only defined for square matrices")
+      return self == Matrix.identity(self.dim)
+    raise TypeError("Equality only implemented between matrices")
+
   def __eq__(self, M: Matrix | int) -> bool:
     """Matrix equality.
 
     Equality is supported between matrices of same dimension, and the integer literals `0` and `1`
     (representing, respectively, the zero and identity matrices of same dimension).
     """
-    if M == 0:
-      M = Matrix.zero(self.dim)
-    if M == 1 and self.is_square():
-      M = Matrix.identity(self.dim)
+    if M in [0, 1]:
+      return self.__eq__int(M)
     if not isinstance(M, Matrix):
       raise TypeError("Equality only implemented between matrices")
     if self.dim != M.dim:
