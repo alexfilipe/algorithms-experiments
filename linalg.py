@@ -162,22 +162,34 @@ class Matrix:
 
   def __eq__zero(self) -> bool:
     """Equality between matrix and zero matrix."""
-    if not self.is_numerical():
-      raise TypeError("Zero matrix only defined for numerical matrices")
-    for row in self.__array:
-      for elt in row:
-        if elt != 0:
+    m, n = self.dim
+    for i in range(m):
+      for j in range(n):
+        if self[i,j] != 0:
+          return False
+    return True
+
+  def __eq__identity(self) -> bool:
+    """Equality between matrix and identity matrix."""
+    if not self.is_square():
+      return False
+    n = self.dim[0]
+    for i in range(n):
+      for j in range(n):
+        if i == j and self[i,j] != 1:
+          return False
+        if i != j and self[i,j] != 0:
           return False
     return True
 
   def __eq__int(self, M: int) -> bool:
     """Equality between matrix and integer representing matrix."""
+    if not self.is_numerical():
+      raise TypeError("Equality with integer only implemented for numerical matrices")
     if M == 0:
       return self.__eq__zero()
     if M == 1:
-      if not self.is_square():
-        return False
-      return self == Matrix.identity(self.dim)
+      return self.__eq__identity()
     raise TypeError("Equality only implemented between matrices")
 
   def __eq__(self, M: Matrix | int) -> bool:
@@ -186,9 +198,9 @@ class Matrix:
     Equality is supported between matrices of same dimension, and the integer literals `0` and `1`
     (representing, respectively, the zero and identity matrices of same dimension).
     """
-    if M in [0, 1]:
-      return self.__eq__int(M)
     if not isinstance(M, Matrix):
+      if M in [0, 1]:
+        return self.__eq__int(M)
       raise TypeError("Equality only implemented between matrices")
     if self.dim != M.dim:
       return False
