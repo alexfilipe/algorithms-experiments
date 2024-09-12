@@ -305,10 +305,11 @@ class Matrix:
     """Matrix addition. Supports the integer literals `0` and `1`, representing the zero and
     identity matrices of same dimension, respectively.
     """
-    if M == 0:
-      return self.copy()
-    if M == 1 and self.is_square():
-      M = Matrix.identity(self.dim, dtype=self.dtype)
+    if self.is_square():
+      if M == 0:
+        return self.copy()
+      if M == 1:
+        M = Matrix.identity(self.dim, dtype=self.dtype)
     if not isinstance(M, Matrix):
       raise TypeError("Addition only supported between matrices")
     if not self.is_numerical() or not M.is_numerical():
