@@ -326,7 +326,7 @@ class Matrix:
       raise TypeError("Conjugate transpose is only implemented for numerical matrices")
     if self.dtype in [int, float]:
       return self.transpose()
-    return Matrix([[elt.conjugate() for elt in row] for row in self.transpose().__array])
+    return Matrix([[elt.conjugate() for elt in row] for row in self.__array]).transpose()
 
   @property
   def H(self) -> Matrix:
