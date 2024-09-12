@@ -135,7 +135,9 @@ class Matrix:
 
   def size(self) -> int:
     """Partially deep getsizeof of the contents of this matrix."""
-    return sum(sys.getsizeof(row) for row in self.__array) if self.dim[0] > 0 else 0
+    if self.dim[0] > 0 and self.dim[1] > 0:
+      return sum(sys.getsizeof(row) for row in self.__array)
+    return 0
 
   @classmethod
   def from_str(cls, string: str, rowsep: str = '\n', colsep: str = ' ',
