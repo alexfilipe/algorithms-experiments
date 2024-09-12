@@ -176,7 +176,7 @@ class Matrix:
       return self.__eq__zero()
     if M == 1:
       if not self.is_square():
-        raise ValueError("Identity matrix only defined for square matrices")
+        return False
       return self == Matrix.identity(self.dim)
     raise TypeError("Equality only implemented between matrices")
 
